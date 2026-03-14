@@ -1,3 +1,15 @@
+## 0.0.3
+
+* Refactor to use shared animal_detection utils
+
+## 0.0.2
+
+- Added homepage and repository to pubspec.yaml
+
 ## 0.0.1
 
-* TODO: Describe initial release.
+- Initial release
+- Dog face detection with bounding box
+- 46 facial landmark extraction (ears, eyes, nose, mouth/chin)
+- DogDetector and DogDetectorIsolate APIs
+- Support for iOS, Android, macOS, Windows, Linux
