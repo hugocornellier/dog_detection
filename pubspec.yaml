@@ -1,6 +1,6 @@
 name: dog_detection
 description: "Dog face and landmark detection using on-device TFLite models."
-version: 0.0.3
+version: 0.0.5
 homepage: https://github.com/hugocornellier/dog_detection
 repository: https://github.com/hugocornellier/dog_detection
 
@@ -11,7 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  animal_detection: ^0.0.3
+  animal_detection: ^0.0.4
   opencv_dart: ^2.2.1+4
   flutter_litert: ^2.0.5
   meta: ^1.17.0

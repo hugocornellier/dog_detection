@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: animal_detection
-      sha256: b3109c5fd6d0b8aa84da7cd2b7112b27a79dbaf99589d7958e4a076887cac282
+      sha256: "3a9a2db919b97e2f3f681c7247342dc5d44a7d062f2431d1b6f633749942b41a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.3"
+    version: "0.0.4"
   async:
     dependency: transitive
     description:
@@ -95,7 +95,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.2"
+    version: "0.0.4"
   fake_async:
     dependency: transitive
     description:

@@ -1,3 +1,11 @@
+## 0.0.5
+
+* Update animal_detection 0.0.3 -> 0.0.4
+
+## 0.0.4
+
+* Fix Xcode build warnings by declaring PrivacyInfo.xcprivacy as a resource bundle in iOS and macOS podspecs
+
 ## 0.0.3
 
 * Refactor to use shared animal_detection utils
