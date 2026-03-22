@@ -879,6 +879,84 @@ void main() {
 
       await second.dispose();
     });
+
+    testWidgets('should handle two sequential detectDogs calls on same isolate',
+        (tester) async {
+      final isolate = await DogDetectorIsolate.spawn(
+        mode: DogDetectionMode.full,
+      );
+      expect(isolate.isReady, true);
+
+      final ByteData data = await rootBundle
+          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final Uint8List bytes = data.buffer.asUint8List();
+
+      final List<Dog> first = await isolate.detectDogs(bytes);
+      expect(first, isNotEmpty);
+
+      final List<Dog> second = await isolate.detectDogs(bytes);
+      expect(second, isNotEmpty);
+
+      expect(first.length, second.length);
+
+      await isolate.dispose();
+    });
+
+    testWidgets(
+        'should handle three sequential detectDogs calls on same isolate',
+        (tester) async {
+      final isolate = await DogDetectorIsolate.spawn(
+        mode: DogDetectionMode.full,
+      );
+      expect(isolate.isReady, true);
+
+      final ByteData data = await rootBundle
+          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final Uint8List bytes = data.buffer.asUint8List();
+
+      final List<Dog> first = await isolate.detectDogs(bytes);
+      expect(first, isNotEmpty);
+
+      final List<Dog> second = await isolate.detectDogs(bytes);
+      expect(second, isNotEmpty);
+
+      final List<Dog> third = await isolate.detectDogs(bytes);
+      expect(third, isNotEmpty);
+
+      expect(first.length, second.length);
+      expect(second.length, third.length);
+
+      await isolate.dispose();
+    });
+
+    testWidgets(
+        'should handle two sequential detectDogsFromMat calls on same isolate',
+        (tester) async {
+      final isolate = await DogDetectorIsolate.spawn(
+        mode: DogDetectionMode.full,
+      );
+      expect(isolate.isReady, true);
+
+      final ByteData data = await rootBundle
+          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final Uint8List bytes = data.buffer.asUint8List();
+      final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
+      expect(mat.isEmpty, isFalse);
+
+      try {
+        final List<Dog> first = await isolate.detectDogsFromMat(mat);
+        expect(first, isNotEmpty);
+
+        final List<Dog> second = await isolate.detectDogsFromMat(mat);
+        expect(second, isNotEmpty);
+
+        expect(first.length, second.length);
+      } finally {
+        mat.dispose();
+      }
+
+      await isolate.dispose();
+    });
   });
 
   // ---------------------------------------------------------------------------

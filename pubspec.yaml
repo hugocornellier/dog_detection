@@ -1,6 +1,6 @@
 name: dog_detection
 description: "Dog face and landmark detection using on-device TFLite models."
-version: 0.0.5
+version: 0.0.6
 homepage: https://github.com/hugocornellier/dog_detection
 repository: https://github.com/hugocornellier/dog_detection
 

@@ -1,3 +1,7 @@
+## 0.0.6
+
+* Fix isolate hanging on sequential detect calls
+
 ## 0.0.5
 
 * Update animal_detection 0.0.3 -> 0.0.4
