@@ -83,6 +83,7 @@ class DogDetector {
   /// (modelName, bytesReceived, totalBytes).
   Future<void> initialize({
     void Function(String model, int received, int total)? onDownloadProgress,
+    bool useIsolateInterpreter = true,
   }) async {
     if (_isInitialized) {
       await dispose();
@@ -103,6 +104,7 @@ class DogDetector {
       );
       await _animalDetector!.initialize(
         onDownloadProgress: onDownloadProgress,
+        useIsolateInterpreter: useIsolateInterpreter,
       );
     }
 
@@ -112,7 +114,10 @@ class DogDetector {
         modelPath:
             'packages/dog_detection/assets/models/dog_face_localizer.tflite',
       );
-      await _localizer!.initialize(performanceConfig);
+      await _localizer!.initialize(
+        performanceConfig,
+        useIsolateInterpreter: useIsolateInterpreter,
+      );
 
       if (landmarkModel == DogLandmarkModel.ensemble) {
         _ensemble = EnsembleLandmarkModelBase(
@@ -126,6 +131,7 @@ class DogDetector {
         await _ensemble!.initialize(
           performanceConfig,
           onDownloadProgress: onDownloadProgress,
+          useIsolateInterpreter: useIsolateInterpreter,
         );
       } else {
         _lm = LandmarkModelRunnerBase(
@@ -135,7 +141,10 @@ class DogDetector {
               'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',
           poolSize: interpreterPoolSize,
         );
-        await _lm!.initialize(performanceConfig);
+        await _lm!.initialize(
+          performanceConfig,
+          useIsolateInterpreter: useIsolateInterpreter,
+        );
       }
     }
 
@@ -155,6 +164,7 @@ class DogDetector {
     Uint8List? classifierBytes,
     String? speciesMappingJson,
     Uint8List? poseModelBytes,
+    bool useIsolateInterpreter = true,
   }) async {
     if (_isInitialized) {
       await dispose();
@@ -199,6 +209,7 @@ class DogDetector {
         classifierBytes: classifierBytes,
         speciesMappingJson: speciesMappingJson,
         poseModelBytes: poseModelBytes,
+        useIsolateInterpreter: useIsolateInterpreter,
       );
     }
 
@@ -219,7 +230,11 @@ class DogDetector {
         modelPath:
             'packages/dog_detection/assets/models/dog_face_localizer.tflite',
       );
-      await _localizer!.initializeFromBuffer(localizerBytes, performanceConfig);
+      await _localizer!.initializeFromBuffer(
+        localizerBytes,
+        performanceConfig,
+        useIsolateInterpreter: useIsolateInterpreter,
+      );
 
       if (landmarkModel == DogLandmarkModel.ensemble) {
         if (ensemble256Bytes == null || ensemble320Bytes == null) {
@@ -240,6 +255,7 @@ class DogDetector {
           bytes320: ensemble320Bytes,
           bytes384: landmarkBytes,
           performanceConfig: performanceConfig,
+          useIsolateInterpreter: useIsolateInterpreter,
         );
       } else {
         _lm = LandmarkModelRunnerBase(
@@ -249,7 +265,11 @@ class DogDetector {
               'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',
           poolSize: interpreterPoolSize,
         );
-        await _lm!.initializeFromBuffer(landmarkBytes, performanceConfig);
+        await _lm!.initializeFromBuffer(
+          landmarkBytes,
+          performanceConfig,
+          useIsolateInterpreter: useIsolateInterpreter,
+        );
       }
     }
 

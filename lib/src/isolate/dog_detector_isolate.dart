@@ -487,7 +487,7 @@ class DogDetectorIsolate {
   ///
   /// Sends its [SendPort] back to the main isolate on success, or an error map on failure.
   @pragma('vm:entry-point')
-  static Future<void> _isolateEntry(_IsolateStartupData data) async {
+  static void _isolateEntry(_IsolateStartupData data) async {
     final SendPort mainSendPort = data.sendPort;
     final ReceivePort workerReceivePort = ReceivePort();
 
@@ -540,6 +540,7 @@ class DogDetectorIsolate {
         classifierBytes: classifierBytes,
         speciesMappingJson: data.speciesMappingJson,
         poseModelBytes: poseModelBytes,
+        useIsolateInterpreter: false,
       );
 
       mainSendPort.send(workerReceivePort.sendPort);
@@ -550,41 +551,41 @@ class DogDetectorIsolate {
       return;
     }
 
-    await for (final message in workerReceivePort) {
-      if (message is! Map) continue;
+    workerReceivePort.listen((message) async {
+      if (message is! Map) return;
 
       final int? id = message['id'] as int?;
       final String? op = message['op'] as String?;
 
-      if (id == null || op == null) continue;
+      if (id == null || op == null) return;
 
       try {
         switch (op) {
           case 'detect':
-            if (detector == null || !detector.isInitialized) {
+            if (detector == null || !detector!.isInitialized) {
               mainSendPort.send({
                 'id': id,
                 'error': 'DogDetector not initialized in isolate',
               });
-              continue;
+              return;
             }
 
             final ByteBuffer bb =
                 (message['bytes'] as TransferableTypedData).materialize();
             final Uint8List imageBytes = bb.asUint8List();
 
-            final faces = await detector.detect(imageBytes);
+            final faces = await detector!.detect(imageBytes);
             final serialized = faces.map((f) => f.toMap()).toList();
 
             mainSendPort.send({'id': id, 'result': serialized});
 
           case 'detectMat':
-            if (detector == null || !detector.isInitialized) {
+            if (detector == null || !detector!.isInitialized) {
               mainSendPort.send({
                 'id': id,
                 'error': 'DogDetector not initialized in isolate',
               });
-              continue;
+              return;
             }
 
             final ByteBuffer bb =
@@ -598,7 +599,7 @@ class DogDetectorIsolate {
             final mat = cv.Mat.fromList(height, width, matType, matBytes);
 
             try {
-              final faces = await detector.detectFromMat(
+              final faces = await detector!.detectFromMat(
                 mat,
                 imageWidth: width,
                 imageHeight: height,
@@ -617,6 +618,6 @@ class DogDetectorIsolate {
       } catch (e, st) {
         mainSendPort.send({'id': id, 'error': '$e\n$st'});
       }
-    }
+    });
   }
 }
