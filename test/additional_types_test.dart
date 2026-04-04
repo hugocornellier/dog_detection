@@ -5,16 +5,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // ---------------------------------------------------------------------------
-  // DogLandmarkModel — ensemble.name gap
+  // DogLandmarkModel, ensemble.name gap
   // ---------------------------------------------------------------------------
-  group('DogLandmarkModel — ensemble name', () {
+  group('DogLandmarkModel, ensemble name', () {
     test('ensemble name is ensemble', () {
       expect(DogLandmarkModel.ensemble.name, 'ensemble');
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Point — z coordinate, is3D, toString, ==, hashCode, toMap/fromMap
+  // Point, z coordinate, is3D, toString, ==, hashCode, toMap/fromMap
   // ---------------------------------------------------------------------------
   group('Point extended', () {
     test('constructor accepts optional z', () {
@@ -115,7 +115,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // BoundingBox — width, height, center, corners
+  // BoundingBox, width, height, center, corners
   // ---------------------------------------------------------------------------
   group('BoundingBox computed properties', () {
     test('width is right minus left', () {
@@ -180,7 +180,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // DogLandmark — toString
+  // DogLandmark, toString
   // ---------------------------------------------------------------------------
   group('DogLandmark toString', () {
     // DogLandmark does not override toString, so we just ensure it doesn't crash
@@ -197,7 +197,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // AnimalPoseLandmarkType enum — all 24 values and indices
+  // AnimalPoseLandmarkType enum, all 24 values and indices
   // ---------------------------------------------------------------------------
   group('AnimalPoseLandmarkType enum', () {
     test('has exactly 24 values', () {
@@ -251,7 +251,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // AnimalPoseLandmark — toMap / fromMap
+  // AnimalPoseLandmark, toMap / fromMap
   // ---------------------------------------------------------------------------
   group('AnimalPoseLandmark', () {
     test('constructor stores all fields', () {
@@ -337,7 +337,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // AnimalPose — getLandmark, hasLandmarks, toMap/fromMap
+  // AnimalPose, getLandmark, hasLandmarks, toMap/fromMap
   // ---------------------------------------------------------------------------
   group('AnimalPose', () {
     AnimalPoseLandmark makeLm(AnimalPoseLandmarkType type,
@@ -525,7 +525,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Animal — toMap, fromMap, toString
+  // Animal, toMap, fromMap, toString
   // ---------------------------------------------------------------------------
   group('Animal', () {
     AnimalPose makePose() {

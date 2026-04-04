@@ -66,7 +66,7 @@ void main() {
         (tester) async {
       final detector = DogDetector();
       expect(detector.isInitialized, false);
-      // No dispose needed — detector was never initialized.
+      // No dispose needed, detector was never initialized.
     });
 
     testWidgets('should throw StateError when detect called before init',

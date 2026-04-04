@@ -59,7 +59,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // DogLandmarkType enum — 46 values, DogFLW dataset topology
+  // DogLandmarkType enum, 46 values, DogFLW dataset topology
   // ---------------------------------------------------------------------------
   group('DogLandmarkType enum', () {
     test('has exactly 46 values', () {
