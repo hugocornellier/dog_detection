@@ -287,7 +287,7 @@ class DogLandmark {
 
   /// Converts landmark coordinates to a pixel point
   Point toPixel(int imageWidth, int imageHeight) {
-    return Point(x, y);
+    return Point(x.truncateToDouble(), y.truncateToDouble());
   }
 }
 

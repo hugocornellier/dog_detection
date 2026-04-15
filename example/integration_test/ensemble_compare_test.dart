@@ -50,7 +50,7 @@ void main() {
     for (final lm in dog.face?.landmarks ?? []) {
       // ignore: avoid_print
       print(
-          'LM ${lm.type.index.toString().padLeft(2)}: x=${lm.x.toStringAsFixed(2).padLeft(7)}, y=${lm.y.toStringAsFixed(2).padLeft(7)}  (${lm.type.name})');
+          'LM ${lm.type.index.toString().padLeft(2)}: x=${lm.x.toStringAsFixed(2).padLeft(7)}, y=${lm.y.toStringAsFixed(2).padLeft(7)}  (${'${lm.type}'.split('.').last})');
     }
 
     expect(dog.face?.landmarks.length, 46);
