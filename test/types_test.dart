@@ -4,6 +4,35 @@ import 'package:dog_detection/dog_detection.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('DogDetector model version', () {
+    test('default modelVersion is non-empty and package-scoped', () {
+      expect(DogDetector.modelVersion, isNotEmpty);
+      expect(DogDetector.modelVersion, contains('dog_detection:1.0.5'));
+      expect(DogDetector.modelVersion, DogDetector.modelVersionFor());
+    });
+
+    test('modelVersionFor changes with detector configuration', () {
+      final base = DogDetector.modelVersionFor();
+
+      expect(
+        DogDetector.modelVersionFor(mode: DogDetectionMode.poseOnly),
+        isNot(base),
+      );
+      expect(
+        DogDetector.modelVersionFor(mode: DogDetectionMode.faceOnly),
+        isNot(base),
+      );
+      expect(
+        DogDetector.modelVersionFor(poseModel: AnimalPoseModel.hrnet),
+        isNot(base),
+      );
+      expect(
+        DogDetector.modelVersionFor(landmarkModel: DogLandmarkModel.ensemble),
+        isNot(base),
+      );
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // DogDetectionMode enum
   // ---------------------------------------------------------------------------

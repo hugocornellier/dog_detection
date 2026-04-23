@@ -24,6 +24,29 @@ import 'util/model_downloader.dart';
 /// await detector.dispose();
 /// ```
 class DogDetector {
+  static const String _packageVersion = '1.0.5';
+  static const String _pipelineVersion = 'pipeline_v1';
+
+  /// Version key for the default dog detection pipeline.
+  ///
+  /// Downstream caches can use this to invalidate stored detections when model
+  /// weights, preprocessing, post-processing, thresholds, or coordinate
+  /// conventions change.
+  static const String modelVersion =
+      'dog_detection:$_packageVersion:mode=full:poseModel=rtmpose:'
+      'landmarkModel=full:$_pipelineVersion';
+
+  /// Builds a version key for a specific dog detector configuration.
+  static String modelVersionFor({
+    DogDetectionMode mode = DogDetectionMode.full,
+    AnimalPoseModel poseModel = AnimalPoseModel.rtmpose,
+    DogLandmarkModel landmarkModel = DogLandmarkModel.full,
+  }) {
+    return 'dog_detection:$_packageVersion:mode=${mode.name}:'
+        'poseModel=${poseModel.name}:landmarkModel=${landmarkModel.name}:'
+        '$_pipelineVersion';
+  }
+
   // Animal detection pipeline (full / poseOnly)
   AnimalDetector? _animalDetector;
 
