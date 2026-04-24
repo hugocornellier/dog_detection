@@ -1,3 +1,11 @@
+## 1.0.7
+
+* Update flutter_litert -> 2.4.0
+
+## 1.0.6
+
+* Update flutter_litert -> 2.3.0
+
 ## 1.0.5
 
 * Add public `DogDetector.modelVersion` and `DogDetector.modelVersionFor(...)` APIs for downstream cache invalidation.
