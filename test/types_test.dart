@@ -128,7 +128,7 @@ void main() {
       expect(DogLandmarkType.rightEyeBottom.index, 23);
     });
 
-    test('nose ring indices (24–31)', () {
+    test('nose ring indices (24-31)', () {
       expect(DogLandmarkType.noseRing0.index, 24);
       expect(DogLandmarkType.noseRing1.index, 25);
       expect(DogLandmarkType.noseRing2.index, 26);
@@ -139,7 +139,7 @@ void main() {
       expect(DogLandmarkType.noseRing7.index, 31);
     });
 
-    test('mouth/chin contour indices (32–45)', () {
+    test('mouth/chin contour indices (32-45)', () {
       expect(DogLandmarkType.mouthChin0.index, 32);
       expect(DogLandmarkType.mouthChin1.index, 33);
       expect(DogLandmarkType.mouthChin2.index, 34);

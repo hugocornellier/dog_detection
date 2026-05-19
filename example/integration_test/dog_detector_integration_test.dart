@@ -729,7 +729,7 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('normalized coordinates should be in 0.0–1.0 range',
+    testWidgets('normalized coordinates should be in 0.0-1.0 range',
         (tester) async {
       final detector = DogDetector(
         mode: DogDetectionMode.full,

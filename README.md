@@ -132,7 +132,7 @@ final detector = DogDetector(
 | `mode` | `DogDetectionMode` | `full` | Detection mode |
 | `poseModel` | `AnimalPoseModel` | `rtmpose` | Body pose model variant |
 | `landmarkModel` | `DogLandmarkModel` | `full` | Face landmark model variant |
-| `cropMargin` | `double` | `0.20` | Margin around detected body crop (0.0–1.0) |
+| `cropMargin` | `double` | `0.20` | Margin around detected body crop (0.0-1.0) |
 | `detThreshold` | `double` | `0.5` | SSD detection confidence threshold |
 | `interpreterPoolSize` | `int` | `1` | TFLite interpreter pool size |
 | `performanceConfig` | `PerformanceConfig` | `disabled` | Hardware acceleration config |
