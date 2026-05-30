@@ -29,3 +29,7 @@ migrate_working_dir/
 
 # Exclude from pub.dev archive (referenced via GitHub URLs)
 assets/screenshots/
+
+# Example Podfiles (gitignored; not needed in the published tarball).
+example/**/Podfile
+example/**/Podfile.lock
