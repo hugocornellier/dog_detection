@@ -486,6 +486,21 @@ class DogDetectorIsolate {
   /// Isolate entry point: initializes the [DogDetector] and listens for detection requests.
   ///
   /// Sends its [SendPort] back to the main isolate on success, or an error map on failure.
+  /// Reconstructs a [cv.Mat] from raw bytes WITHOUT the boxed, double-copy
+  /// `cv.Mat.fromList` path (it takes a `List<num>`, boxing every byte and
+  /// copying twice, ~100x slower for full frames). Allocates once with
+  /// `Mat.create` and bulk-copies into the Mat's contiguous native data view.
+  static cv.Mat _matFromBytes(
+    int rows,
+    int cols,
+    cv.MatType type,
+    Uint8List bytes,
+  ) {
+    final mat = cv.Mat.create(rows: rows, cols: cols, type: type);
+    mat.data.setRange(0, bytes.length, bytes);
+    return mat;
+  }
+
   @pragma('vm:entry-point')
   static void _isolateEntry(_IsolateStartupData data) async {
     final SendPort mainSendPort = data.sendPort;
@@ -596,7 +611,7 @@ class DogDetectorIsolate {
             final int matTypeValue = message['matType'] as int;
 
             final matType = cv.MatType(matTypeValue);
-            final mat = cv.Mat.fromList(height, width, matType, matBytes);
+            final mat = _matFromBytes(height, width, matType, matBytes);
 
             try {
               final faces = await detector!.detectFromMat(
