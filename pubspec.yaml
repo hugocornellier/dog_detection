@@ -29,7 +29,6 @@ flutter:
   assets:
     - assets/models/dog_face_localizer.tflite
     - assets/models/dog_face_landmarks_full.tflite
-    - assets/samples/
 
   plugin:
     platforms:

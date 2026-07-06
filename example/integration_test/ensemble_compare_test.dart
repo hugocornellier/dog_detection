@@ -23,8 +23,8 @@ void main() {
       },
     );
 
-    final ByteData data = await rootBundle
-        .load('packages/dog_detection/assets/samples/dachshund_test.jpg');
+    final ByteData data =
+        await rootBundle.load('assets/samples/dachshund_test.jpg');
     final bytes = data.buffer.asUint8List();
 
     final List<Dog> results = await detector.detect(bytes);

@@ -33,7 +33,7 @@ void main() {
 
     // Load test image
     final imageData = await rootBundle.load(
-      'packages/dog_detection/assets/samples/dachshund_test.jpg',
+      'assets/samples/dachshund_test.jpg',
     );
     final imageBytes = imageData.buffer.asUint8List();
 

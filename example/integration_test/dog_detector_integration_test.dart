@@ -139,8 +139,8 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
       expect(mat.isEmpty, isFalse);
@@ -163,8 +163,8 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -193,8 +193,8 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -222,8 +222,8 @@ void main() {
       );
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -248,8 +248,8 @@ void main() {
       );
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -274,8 +274,8 @@ void main() {
       );
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -310,8 +310,8 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
 
       final List<Dog> results = await detector.detect(bytes);
@@ -329,8 +329,8 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_2.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_2.png');
       final Uint8List bytes = data.buffer.asUint8List();
 
       final List<Dog> results = await detector.detect(bytes);
@@ -345,8 +345,8 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
       expect(mat.isEmpty, isFalse);
@@ -395,8 +395,8 @@ void main() {
       final detector = DogDetector(mode: DogDetectionMode.poseOnly);
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -425,8 +425,8 @@ void main() {
       final detector = DogDetector(mode: DogDetectionMode.poseOnly);
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -472,8 +472,8 @@ void main() {
       expect(emptyResults, isNotNull);
 
       // Should work normally after a no-detection run.
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
       try {
@@ -501,8 +501,8 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat1 = cv.imdecode(bytes, cv.IMREAD_COLOR);
       final mat2 = cv.imdecode(bytes, cv.IMREAD_COLOR);
@@ -561,8 +561,8 @@ void main() {
       await detectorTight.initialize();
       await detectorWide.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
 
       // Both detectors should detect successfully with different margins.
@@ -588,8 +588,8 @@ void main() {
       );
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
@@ -627,8 +627,8 @@ void main() {
       );
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
@@ -652,8 +652,8 @@ void main() {
       );
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -691,9 +691,9 @@ void main() {
       await detector.initialize();
 
       final samplePaths = [
-        'packages/dog_detection/assets/samples/sample_dog_1.png',
-        'packages/dog_detection/assets/samples/sample_dog_2.png',
-        'packages/dog_detection/assets/samples/sample_dog_3.png',
+        'assets/samples/sample_dog_1.png',
+        'assets/samples/sample_dog_2.png',
+        'assets/samples/sample_dog_3.png',
       ];
 
       for (final path in samplePaths) {
@@ -736,8 +736,8 @@ void main() {
       );
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
@@ -762,8 +762,8 @@ void main() {
       );
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
@@ -791,8 +791,8 @@ void main() {
       );
       expect(isolate.isReady, true);
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await isolate.detectDogs(bytes);
 
@@ -812,8 +812,8 @@ void main() {
         mode: DogDetectionMode.full,
       );
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
       expect(mat.isEmpty, isFalse);
@@ -841,8 +841,8 @@ void main() {
         mode: DogDetectionMode.full,
       );
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
 
       final List<Dog> mainResults = await detector.detect(bytes);
@@ -870,8 +870,8 @@ void main() {
       final second = await DogDetectorIsolate.spawn();
       expect(second.isReady, true);
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await second.detectDogs(bytes);
 
@@ -887,8 +887,8 @@ void main() {
       );
       expect(isolate.isReady, true);
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
 
       final List<Dog> first = await isolate.detectDogs(bytes);
@@ -910,8 +910,8 @@ void main() {
       );
       expect(isolate.isReady, true);
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
 
       final List<Dog> first = await isolate.detectDogs(bytes);
@@ -937,8 +937,8 @@ void main() {
       );
       expect(isolate.isReady, true);
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
       expect(mat.isEmpty, isFalse);
@@ -993,8 +993,8 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data = await rootBundle
-          .load('packages/dog_detection/assets/samples/sample_dog_1.png');
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
