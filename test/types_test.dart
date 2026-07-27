@@ -7,7 +7,12 @@ void main() {
   group('DogDetector model version', () {
     test('default modelVersion is non-empty and package-scoped', () {
       expect(DogDetector.modelVersion, isNotEmpty);
-      expect(DogDetector.modelVersion, contains('dog_detection:1.0.5'));
+      // Matched by pattern rather than a hardcoded version: pinning the literal
+      // makes every version bump fail this test, which is how _packageVersion
+      // drifted to 1.0.5 while the package shipped 1.5.0.
+      expect(DogDetector.modelVersion, startsWith('dog_detection:'));
+      expect(
+          DogDetector.modelVersion, matches(r'^dog_detection:\d+\.\d+\.\d+:'));
       expect(DogDetector.modelVersion, DogDetector.modelVersionFor());
     });
 
