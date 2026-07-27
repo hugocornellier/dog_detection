@@ -114,7 +114,10 @@ class DogDetectorIsolate {
   /// - [landmarkModel]: Dog landmark model variant
   /// - [cropMargin]: Margin fraction added to bbox sides before Stage 2 crop
   /// - [interpreterPoolSize]: Number of landmark model interpreter instances
-  /// - [performanceConfig]: Hardware acceleration settings
+  /// - [performanceConfig]: Hardware acceleration settings. Defaults to
+  ///   [PerformanceMode.auto] (Metal on iOS, XNNPACK elsewhere). Pass
+  ///   [PerformanceConfig.disabled] only to deliberately opt out; the sibling
+  ///   cat_detection pipeline measured roughly 4x slower with acceleration off.
   ///
   /// Example:
   /// ```dart
@@ -128,7 +131,7 @@ class DogDetectorIsolate {
     DogLandmarkModel landmarkModel = DogLandmarkModel.full,
     double cropMargin = 0.20,
     int interpreterPoolSize = 1,
-    PerformanceConfig performanceConfig = PerformanceConfig.disabled,
+    PerformanceConfig performanceConfig = const PerformanceConfig(),
     void Function(String model, int received, int total)? onDownloadProgress,
   }) async {
     final instance = DogDetectorIsolate._();

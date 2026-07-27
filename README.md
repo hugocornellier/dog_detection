@@ -109,7 +109,7 @@ print('Size: $width x $height');
 | Model | Size | Input | Purpose |
 |-------|------|-------|---------|
 | Face localizer | 16 MB | 224×224 | Dog face detection and bounding box |
-| Landmark model (full) | 55 MB | 384×384 | 46-point facial landmark extraction |
+| Landmark model (full) | 11 MB | 384×384 | 46-point facial landmark extraction |
 
 ## Configuration Options
 

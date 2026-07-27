@@ -25,7 +25,18 @@ import 'util/model_downloader.dart';
 /// ```
 class DogDetector {
   static const String _packageVersion = '1.0.5';
-  static const String _pipelineVersion = 'pipeline_v1';
+  static const String _pipelineVersion = 'pipeline_v2';
+
+  /// Input resolution of the bundled landmark model.
+  ///
+  /// Must match the bundled TFLite model's native input shape. The interpreter
+  /// accepts a mismatched `resizeInputTensor` without erroring and then emits
+  /// garbage coordinates, so this is declared once rather than at each call
+  /// site where the two could silently drift apart.
+  static const int _landmarkInputSize = 384;
+
+  /// Input resolution of the bundled face localizer model.
+  static const int _localizerInputSize = 224;
 
   /// Version key for the default dog detection pipeline.
   ///
@@ -137,7 +148,7 @@ class DogDetector {
 
     if (needsFace) {
       _localizer = FaceLocalizerModel(
-        inputSize: 224,
+        inputSize: _localizerInputSize,
         modelPath:
             'packages/dog_detection/assets/models/dog_face_localizer.tflite',
       );
@@ -162,7 +173,7 @@ class DogDetector {
         );
       } else {
         _lm = LandmarkModelRunnerBase(
-          inputSize: 384,
+          inputSize: _landmarkInputSize,
           numLandmarks: numDogLandmarks,
           modelPath:
               'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',
@@ -253,7 +264,7 @@ class DogDetector {
       }
 
       _localizer = FaceLocalizerModel(
-        inputSize: 224,
+        inputSize: _localizerInputSize,
         modelPath:
             'packages/dog_detection/assets/models/dog_face_localizer.tflite',
       );
@@ -286,7 +297,7 @@ class DogDetector {
         );
       } else {
         _lm = LandmarkModelRunnerBase(
-          inputSize: 384,
+          inputSize: _landmarkInputSize,
           numLandmarks: numDogLandmarks,
           modelPath:
               'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',

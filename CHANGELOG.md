@@ -1,3 +1,41 @@
+## 1.5.0
+
+* Replace the bundled dog face landmark model with a MobileNetV3Large backbone
+  (128-channel deconv head) trained on DogFLW at the same 384px input. The asset
+  drops from 54.6 MiB to 11.0 MiB (57.3 MB -> 11.6 MB), a 4.9x reduction, and
+  accuracy improves slightly. Evaluated over all 480 DogFLW test images in
+  absolute image-pixel space at the training crop geometry, NME_IOD is 8.04
+  versus 8.21 for the previous EfficientNetV2S model. Every facial region is
+  equal or better except mouth (+0.10); both ears, both eyes, nose bridge and
+  nostrils improve. TFLite `invoke()` also measured about 4x faster on desktop
+  CPU with XNNPACK (134 ms vs 546 ms at 4 threads).
+
+  The input/output signature (float32 `[1, 384, 384, 3]` -> float32 `[1, 92]`)
+  is unchanged, so this is a drop-in replacement requiring no caller changes.
+
+  Caveat on the accuracy figures: DogFLW's test split is also used as the
+  validation set during training (early stopping and best-weight restoration
+  monitor it), so both numbers are optimistic in absolute terms. The new model
+  was also given a longer fine-tuning schedule (400 epochs vs 200), so the
+  improvement is not purely architectural.
+* Bump the pipeline component of `DogDetector.modelVersion` to `pipeline_v2` so
+  downstream caches holding detections produced by the old model re-evaluate.
+* Declare the bundled models' input resolutions as named constants rather than
+  repeating integer literals at each call site. A mismatch between the literal
+  and the bundled model is not reported as an error by the interpreter, which
+  resizes the input tensor and then emits garbage coordinates, so the two call
+  sites for each model could previously drift apart silently.
+* `DogDetectorIsolate.spawn` now defaults `performanceConfig` to
+  `PerformanceMode.auto` (Metal on iOS, XNNPACK elsewhere) instead of
+  `PerformanceConfig.disabled`. The isolate is the documented path for live
+  camera work, so the previous default silently opted the most
+  performance-sensitive callers out of hardware acceleration while the plain
+  `DogDetector` constructor already defaulted to auto. Measured on the
+  equivalent cat_detection pipeline over a 3264x2448 photo in profile mode,
+  acceleration off ran 1716 ms/frame versus 438 ms/frame with auto, a 3.9x
+  difference. Callers who relied on the old behaviour should pass
+  `PerformanceConfig.disabled` explicitly.
+
 ## 1.4.0
 
 * Update animal_detection -> 1.4.0, which replaces its shipped 12,944-line SSD

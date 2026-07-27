@@ -1,6 +1,6 @@
 name: dog_detection
 description: "Dog face and landmark detection using on-device LiteRT (formerly TensorFlow Lite) models."
-version: 1.4.0
+version: 1.5.0
 homepage: https://github.com/hugocornellier/dog_detection
 repository: https://github.com/hugocornellier/dog_detection
 
