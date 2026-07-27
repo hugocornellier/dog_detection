@@ -20,7 +20,7 @@ On-device dog detection using TFLite models. Detects dogs in images with breed i
 - Body pose estimation via SuperAnimal keypoints
 - Face localization and 46-point facial landmark extraction (DogFLW)
 - Truly cross-platform: compatible with Android, iOS, macOS, Windows, and Linux
-- Background isolate support via `DogDetectorIsolate` for guaranteed non-blocking UI
+- Detection always runs in a background isolate that `DogDetector` owns, so the UI never blocks
 - Configurable performance with XNNPACK, GPU, and CoreML acceleration
 
 ## Quick Start
@@ -147,36 +147,47 @@ final detector = DogDetector(
 
 ## Background Isolate Detection
 
-For applications that require guaranteed non-blocking UI, use `DogDetectorIsolate`. This runs the **entire** detection pipeline in a background isolate, ensuring all processing happens off the main thread.
+Detection always runs in a background isolate. `DogDetector` spawns and owns that
+isolate during `initialize()`, so the whole pipeline (decode, SSD, species, pose,
+localizer, landmarks) stays off the main thread and the UI is never blocked.
+There is nothing extra to opt into:
 
 ```dart
 import 'package:dog_detection/dog_detection.dart';
 
-// Spawn isolate (loads models in background)
-final detector = await DogDetectorIsolate.spawn(
-  mode: DogDetectionMode.full,
-);
+// initialize() loads the models and spawns the worker isolate
+final detector = DogDetector(mode: DogDetectionMode.full);
+await detector.initialize();
 
-// All detection runs in background isolate, UI never blocked
-final dogs = await detector.detectDogs(imageBytes);
+// Runs in the background isolate; the UI thread stays free
+final dogs = await detector.detect(imageBytes);
 
 for (final dog in dogs) {
   print('${dog.breed} at ${dog.boundingBox}');
   print('Face landmarks: ${dog.face?.landmarks.length}');
 }
 
-// Cleanup when done
+// Tears down the isolate and frees the native interpreters
 await detector.dispose();
 ```
 
-### When to Use DogDetectorIsolate
+Model bytes are transferred into the isolate with `TransferableTypedData`, so the
+~70MB of weights in the default configuration move without being copied.
 
-| Use Case | Recommended |
-|----------|-------------|
-| Live camera with 60fps UI requirement | `DogDetectorIsolate` |
-| Processing images in a batch queue | `DogDetectorIsolate` |
-| Simple single-image detection | `DogDetector` |
-| Maximum control over pipeline stages | `DogDetector` |
+### Migrating from DogDetectorIsolate
+
+`DogDetectorIsolate` is deprecated and will be removed in the next major release.
+It now just delegates to `DogDetector`, so migration is a rename:
+
+| Before | After |
+|--------|-------|
+| `await DogDetectorIsolate.spawn(...)` | `DogDetector(...)` then `await initialize()` |
+| `detector.detectDogs(bytes)` | `detector.detect(bytes)` |
+| `detector.detectDogsFromMat(mat)` | `detector.detectFromMat(mat)` |
+| `detector.dispose()` | `detector.dispose()` (unchanged) |
+
+`onDownloadProgress` moves from `spawn()` to `initialize()`; every other
+configuration argument stays on the `DogDetector` constructor.
 
 ## Performance
 

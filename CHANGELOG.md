@@ -1,5 +1,35 @@
 ## 2.0.0
 
+* `DogDetector` now runs the whole pipeline in a background isolate that it owns.
+  `initialize()` loads the model assets on the main isolate (where `rootBundle`
+  is available) and transfers them into a worker it spawns, so detection no
+  longer runs on the calling thread. This makes `DogDetector` the single entry
+  point for the package.
+
+* **Deprecated** `DogDetectorIsolate`. It is now a thin delegate to
+  `DogDetector` and will be removed in the next major release. Migration is a
+  rename: `DogDetectorIsolate.spawn(...)` becomes `DogDetector(...)` plus
+  `await initialize()`, `detectDogs` becomes `detect`, and `detectDogsFromMat`
+  becomes `detectFromMat`. `onDownloadProgress` moves from `spawn()` to
+  `initialize()`.
+
+* `DogDetector.detectFromMat` now takes `imageWidth` and `imageHeight` as
+  optional named arguments, defaulting to the Mat's own `cols` and `rows`.
+  Existing call sites that pass them keep working.
+
+* `DogDetector.initialize()` no longer accepts `useIsolateInterpreter`, and
+  `initializeFromBuffers` is no longer part of the public API. The worker
+  isolate owns interpreter creation, so neither had a meaningful effect on the
+  public class. The buffer-based entry point now lives on the internal
+  `DogDetectorCore`.
+
+* `detThreshold` is now honored on the isolate path. The previous
+  `DogDetectorIsolate` never forwarded it to the isolate, so a custom threshold
+  was silently ignored and the pipeline ran at the 0.5 default.
+
+* The example app now uses `DogDetector` with default (accelerated) performance
+  settings instead of `DogDetectorIsolate` with `PerformanceConfig.disabled`.
+
 * Require animal_detection 2.0.0, which replaces its boxed nested input and
   output tensors with reused flat `Float32List`s handed to TFLite as
   `ByteBuffer`s. Measured on this pipeline over a 3264x2448 photo in profile

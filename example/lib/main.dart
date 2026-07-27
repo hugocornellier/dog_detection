@@ -115,7 +115,7 @@ class StillImageScreen extends StatefulWidget {
 }
 
 class _StillImageScreenState extends State<StillImageScreen> {
-  DogDetectorIsolate? _detector;
+  DogDetector? _detector;
   final ImagePicker _picker = ImagePicker();
 
   bool _useEnsemble = false;
@@ -176,12 +176,13 @@ class _StillImageScreenState extends State<StillImageScreen> {
         }
       }
 
-      _detector = await DogDetectorIsolate.spawn(
+      final detector = DogDetector(
         mode: _detectionMode,
         poseModel: _poseModel,
         landmarkModel:
             _useEnsemble ? DogLandmarkModel.ensemble : DogLandmarkModel.full,
-        performanceConfig: PerformanceConfig.disabled,
+      );
+      await detector.initialize(
         onDownloadProgress: (model, received, total) {
           if (!mounted) return;
           final mb = (received / 1024 / 1024).toStringAsFixed(1);
@@ -200,6 +201,7 @@ class _StillImageScreenState extends State<StillImageScreen> {
           });
         },
       );
+      _detector = detector;
 
       if (!mounted) return;
       setState(() {
@@ -316,7 +318,7 @@ class _StillImageScreenState extends State<StillImageScreen> {
     });
 
     try {
-      final List<Dog> results = await _detector!.detectDogs(bytes);
+      final List<Dog> results = await _detector!.detect(bytes);
 
       int imgW = 0;
       int imgH = 0;

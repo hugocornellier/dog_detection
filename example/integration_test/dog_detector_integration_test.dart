@@ -9,12 +9,14 @@
 // - Error recovery after empty-result input
 // - Result consistency / determinism
 // - Configuration parameters (cropMargin, PerformanceConfig)
-// - DogDetectorIsolate (spawn, detect, detectFromMat, re-spawn)
+// - DogDetector isolate transport (detect, detectFromMat, re-init, concurrency)
+// - DogDetectorIsolate deprecated shim still delegating to DogDetector
 //
 // Run with:
 //   flutter test integration_test/ --dart-define=...
 // or via a connected device/simulator.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -781,20 +783,32 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // 9. DogDetectorIsolate
+  // 9. DogDetector isolate execution
+  //
+  // DogDetector owns a background isolate internally, so these exercise the
+  // real isolate transport: encoded-image and Mat requests, dispose/re-init,
+  // and repeated requests over one long-lived worker.
   // ---------------------------------------------------------------------------
 
-  group('DogDetectorIsolate', () {
-    testWidgets('should detect dogs via isolate', (tester) async {
-      final isolate = await DogDetectorIsolate.spawn(
-        mode: DogDetectionMode.full,
-      );
-      expect(isolate.isReady, true);
+  group('DogDetector isolate execution', () {
+    testWidgets('should detect dogs via the isolate', (tester) async {
+      final detector = DogDetector(mode: DogDetectionMode.full);
+      await detector.initialize();
+      expect(detector.isReady, true);
 
       final ByteData data =
           await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
-      final List<Dog> results = await isolate.detectDogs(bytes);
+      final List<Dog> results = await detector.detect(bytes);
+
+      debugPrint('Isolate: ${results.length} dog(s) detected');
+      for (final dog in results) {
+        debugPrint('  species=${dog.species}, score=${dog.score}');
+        debugPrint('  face=${dog.face != null}');
+        if (dog.face != null) {
+          debugPrint('  landmarks=${dog.face!.landmarks.length}');
+        }
+      }
 
       expect(results, isNotEmpty);
 
@@ -804,158 +818,212 @@ void main() {
       expect(dog.imageWidth, greaterThan(0));
       expect(dog.imageHeight, greaterThan(0));
 
-      await isolate.dispose();
+      await detector.dispose();
     });
 
-    testWidgets('should detect dogs from Mat via isolate', (tester) async {
-      final isolate = await DogDetectorIsolate.spawn(
-        mode: DogDetectionMode.full,
-      );
+    testWidgets('should detect dogs from a Mat via the isolate',
+        (tester) async {
+      final detector = DogDetector(mode: DogDetectionMode.full);
+      await detector.initialize();
 
       final ByteData data =
           await rootBundle.load('assets/samples/sample_dog_1.png');
-      final Uint8List bytes = data.buffer.asUint8List();
-      final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
+      final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
       expect(mat.isEmpty, isFalse);
 
       try {
-        final List<Dog> results = await isolate.detectDogsFromMat(mat);
+        final List<Dog> results = await detector.detectFromMat(mat);
 
         expect(results, isNotEmpty);
 
         final dog = results.first;
         expect(dog.boundingBox.right, greaterThan(dog.boundingBox.left));
+        expect(dog.face, isNotNull);
         expect(dog.face!.landmarks.length, numDogLandmarks);
       } finally {
         mat.dispose();
       }
 
-      await isolate.dispose();
-    });
-
-    testWidgets('should match main thread results', (tester) async {
-      final detector = DogDetector();
-      await detector.initialize();
-
-      final isolate = await DogDetectorIsolate.spawn(
-        mode: DogDetectionMode.full,
-      );
-
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
-      final Uint8List bytes = data.buffer.asUint8List();
-
-      final List<Dog> mainResults = await detector.detect(bytes);
-      final List<Dog> isolateResults = await isolate.detectDogs(bytes);
-
-      expect(mainResults.length, isolateResults.length);
-
-      for (int i = 0; i < mainResults.length; i++) {
-        expect(mainResults[i].face?.landmarks.length,
-            isolateResults[i].face?.landmarks.length,
-            reason: 'Landmark count mismatch at index $i');
-      }
-
       await detector.dispose();
-      await isolate.dispose();
     });
 
-    testWidgets('should support dispose and re-spawn', (tester) async {
-      final first = await DogDetectorIsolate.spawn();
-      expect(first.isReady, true);
-      await first.dispose();
-      expect(first.isReady, false);
-
-      // Spawn a new isolate after the previous one was disposed.
-      final second = await DogDetectorIsolate.spawn();
-      expect(second.isReady, true);
-
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
-      final Uint8List bytes = data.buffer.asUint8List();
-      final List<Dog> results = await second.detectDogs(bytes);
-
-      expect(results, isNotEmpty);
-
-      await second.dispose();
-    });
-
-    testWidgets('should handle two sequential detectDogs calls on same isolate',
-        (tester) async {
-      final isolate = await DogDetectorIsolate.spawn(
-        mode: DogDetectionMode.full,
-      );
-      expect(isolate.isReady, true);
-
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
-      final Uint8List bytes = data.buffer.asUint8List();
-
-      final List<Dog> first = await isolate.detectDogs(bytes);
-      expect(first, isNotEmpty);
-
-      final List<Dog> second = await isolate.detectDogs(bytes);
-      expect(second, isNotEmpty);
-
-      expect(first.length, second.length);
-
-      await isolate.dispose();
-    });
-
-    testWidgets(
-        'should handle three sequential detectDogs calls on same isolate',
-        (tester) async {
-      final isolate = await DogDetectorIsolate.spawn(
-        mode: DogDetectionMode.full,
-      );
-      expect(isolate.isReady, true);
-
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
-      final Uint8List bytes = data.buffer.asUint8List();
-
-      final List<Dog> first = await isolate.detectDogs(bytes);
-      expect(first, isNotEmpty);
-
-      final List<Dog> second = await isolate.detectDogs(bytes);
-      expect(second, isNotEmpty);
-
-      final List<Dog> third = await isolate.detectDogs(bytes);
-      expect(third, isNotEmpty);
-
-      expect(first.length, second.length);
-      expect(second.length, third.length);
-
-      await isolate.dispose();
-    });
-
-    testWidgets(
-        'should handle two sequential detectDogsFromMat calls on same isolate',
-        (tester) async {
-      final isolate = await DogDetectorIsolate.spawn(
-        mode: DogDetectionMode.full,
-      );
-      expect(isolate.isReady, true);
+    testWidgets('detect and detectFromMat should agree', (tester) async {
+      final detector = DogDetector(mode: DogDetectionMode.full);
+      await detector.initialize();
 
       final ByteData data =
           await rootBundle.load('assets/samples/sample_dog_1.png');
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
+
+      try {
+        final List<Dog> fromBytes = await detector.detect(bytes);
+        final List<Dog> fromMat = await detector.detectFromMat(mat);
+
+        expect(fromBytes.length, fromMat.length);
+        for (int i = 0; i < fromBytes.length; i++) {
+          expect(fromBytes[i].face?.landmarks.length,
+              fromMat[i].face?.landmarks.length,
+              reason: 'Landmark count mismatch at index $i');
+        }
+      } finally {
+        mat.dispose();
+      }
+
+      await detector.dispose();
+    });
+
+    testWidgets('should reject detect() before initialize()', (tester) async {
+      final detector = DogDetector();
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
+
+      expect(detector.isReady, false);
+      await expectLater(
+        detector.detect(data.buffer.asUint8List()),
+        throwsStateError,
+      );
+    });
+
+    testWidgets('should support dispose and re-initialize', (tester) async {
+      final detector = DogDetector();
+      await detector.initialize();
+      expect(detector.isReady, true);
+      await detector.dispose();
+      expect(detector.isReady, false);
+
+      // The same instance must be reusable after its isolate was torn down.
+      await detector.initialize();
+      expect(detector.isReady, true);
+
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final List<Dog> results =
+          await detector.detect(data.buffer.asUint8List());
+
+      expect(results, isNotEmpty);
+
+      await detector.dispose();
+    });
+
+    testWidgets('should handle three sequential detect calls on one isolate',
+        (tester) async {
+      final detector = DogDetector(mode: DogDetectionMode.full);
+      await detector.initialize();
+      expect(detector.isReady, true);
+
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final Uint8List bytes = data.buffer.asUint8List();
+
+      final List<Dog> first = await detector.detect(bytes);
+      final List<Dog> second = await detector.detect(bytes);
+      final List<Dog> third = await detector.detect(bytes);
+
+      expect(first, isNotEmpty);
+      expect(second, isNotEmpty);
+      expect(third, isNotEmpty);
+      expect(first.length, second.length);
+      expect(second.length, third.length);
+
+      await detector.dispose();
+    });
+
+    testWidgets(
+        'should handle two sequential detectFromMat calls on one isolate',
+        (tester) async {
+      final detector = DogDetector(mode: DogDetectionMode.full);
+      await detector.initialize();
+
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
       expect(mat.isEmpty, isFalse);
 
       try {
-        final List<Dog> first = await isolate.detectDogsFromMat(mat);
+        final List<Dog> first = await detector.detectFromMat(mat);
+        final List<Dog> second = await detector.detectFromMat(mat);
+
         expect(first, isNotEmpty);
-
-        final List<Dog> second = await isolate.detectDogsFromMat(mat);
         expect(second, isNotEmpty);
-
         expect(first.length, second.length);
       } finally {
         mat.dispose();
       }
 
+      await detector.dispose();
+    });
+
+    testWidgets('concurrent detect calls should all resolve', (tester) async {
+      final detector = DogDetector(mode: DogDetectionMode.full);
+      await detector.initialize();
+
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final Uint8List bytes = data.buffer.asUint8List();
+
+      // One worker, three in-flight requests: the RPC layer must keep replies
+      // matched to their requests rather than interleaving them.
+      final batch = await Future.wait([
+        detector.detect(bytes),
+        detector.detect(bytes),
+        detector.detect(bytes),
+      ]);
+
+      expect(batch, hasLength(3));
+      for (final results in batch) {
+        expect(results, isNotEmpty);
+        expect(results.length, batch.first.length);
+      }
+
+      await detector.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 9b. DogDetectorIsolate (deprecated shim)
+  //
+  // Kept until the class is removed, to prove the delegate still forwards to
+  // DogDetector and produces equivalent results.
+  // ---------------------------------------------------------------------------
+
+  group('DogDetectorIsolate (deprecated)', () {
+    testWidgets('deprecated shim still detects and matches DogDetector',
+        (tester) async {
+      // ignore: deprecated_member_use
+      final isolate = await DogDetectorIsolate.spawn(
+        mode: DogDetectionMode.full,
+      );
+      expect(isolate.isReady, true);
+
+      final detector = DogDetector(mode: DogDetectionMode.full);
+      await detector.initialize();
+
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final Uint8List bytes = data.buffer.asUint8List();
+      final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
+
+      try {
+        // ignore: deprecated_member_use
+        final List<Dog> viaShim = await isolate.detectDogs(bytes);
+        // ignore: deprecated_member_use
+        final List<Dog> viaShimMat = await isolate.detectDogsFromMat(mat);
+        final List<Dog> viaDetector = await detector.detect(bytes);
+
+        expect(viaShim, isNotEmpty);
+        expect(viaShim.length, viaDetector.length);
+        expect(viaShimMat.length, viaDetector.length);
+        expect(viaShim.first.face?.landmarks.length,
+            viaDetector.first.face?.landmarks.length);
+      } finally {
+        mat.dispose();
+      }
+
+      // ignore: deprecated_member_use
       await isolate.dispose();
+      expect(isolate.isReady, false);
+      await detector.dispose();
     });
   });
 

@@ -28,8 +28,8 @@
 /// ```
 ///
 /// **Main Classes:**
-/// - [DogDetectorIsolate]: Background isolate wrapper for dog detection
-/// - [DogDetector]: Main API for dog detection
+/// - [DogDetector]: Main API for dog detection. Runs the whole pipeline in a
+///   background isolate it owns, so detection never blocks the UI thread.
 /// - [Dog]: Top-level detection result with body, pose and face info
 /// - [DogFace]: Detected dog face with bounding box and landmarks
 /// - [DogLandmark]: Single face keypoint with 2D coordinates
@@ -56,6 +56,9 @@ library;
 
 export 'src/types.dart';
 export 'src/dog_detector.dart' show DogDetector;
+
+// Deprecated: DogDetector now owns its background isolate, making this wrapper
+// redundant. Kept for one major release to give consumers time to migrate.
 export 'src/isolate/dog_detector_isolate.dart' show DogDetectorIsolate;
 
 // Re-export everything from animal_detection that consumers need

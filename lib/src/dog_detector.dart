@@ -1,20 +1,77 @@
+import 'dart:isolate';
 import 'dart:typed_data';
+
+import 'package:flutter/services.dart';
+import 'package:flutter_litert/native.dart';
 import 'package:opencv_dart/opencv_dart.dart' as cv;
 import 'package:animal_detection/animal_detection.dart';
+
 import 'types.dart';
 import 'util/model_downloader.dart';
+import 'isolate/dog_detector_core.dart';
+
+/// Startup payload for the detection isolate.
+///
+/// Model bytes travel as [TransferableTypedData] so ownership moves to the
+/// worker isolate without copying (~70MB of weights in the default config).
+class _IsolateStartupData {
+  final SendPort sendPort;
+
+  // Face pipeline
+  final TransferableTypedData? localizerBytes;
+  final TransferableTypedData? landmarkBytes;
+  final TransferableTypedData? ensemble256Bytes;
+  final TransferableTypedData? ensemble320Bytes;
+
+  // Body pipeline
+  final TransferableTypedData? bodyDetectorBytes;
+  final TransferableTypedData? classifierBytes;
+  final String? speciesMappingJson;
+  final TransferableTypedData? poseModelBytes;
+  final String poseModelName;
+
+  // Configuration
+  final String modeName;
+  final String landmarkModelName;
+  final double cropMargin;
+  final double detThreshold;
+  final int interpreterPoolSize;
+  final String performanceModeName;
+  final int? numThreads;
+
+  const _IsolateStartupData({
+    required this.sendPort,
+    this.localizerBytes,
+    this.landmarkBytes,
+    this.ensemble256Bytes,
+    this.ensemble320Bytes,
+    this.bodyDetectorBytes,
+    this.classifierBytes,
+    this.speciesMappingJson,
+    this.poseModelBytes,
+    required this.poseModelName,
+    required this.modeName,
+    required this.landmarkModelName,
+    required this.cropMargin,
+    required this.detThreshold,
+    required this.interpreterPoolSize,
+    required this.performanceModeName,
+    this.numThreads,
+  });
+}
 
 /// On-device dog detection using a unified multi-stage TensorFlow Lite pipeline.
 ///
+/// Inference runs in a background isolate that this class owns, so the pipeline
+/// never blocks the UI thread. Model assets are loaded (and downloaded, when
+/// needed) on the main isolate and transferred into the worker during
+/// [initialize].
+///
 /// Supports three modes:
 /// - [DogDetectionMode.full]: SSD body detection + species classification +
-///   body pose estimation + face localization + face landmarks.
+///   body pose estimation + face landmarks.
 /// - [DogDetectionMode.poseOnly]: Body detection + species + body pose only.
-/// - [DogDetectionMode.faceOnly]: Face localizer + face landmarks only (legacy).
-///
-/// Uses [AnimalDetector] from the animal_detection package for body detection,
-/// species classification, and pose estimation. Dog-specific face detection
-/// and landmark extraction are handled directly.
+/// - [DogDetectionMode.faceOnly]: Face localizer + face landmarks, no SSD.
 ///
 /// Usage:
 /// ```dart
@@ -26,17 +83,6 @@ import 'util/model_downloader.dart';
 class DogDetector {
   static const String _packageVersion = '2.0.0';
   static const String _pipelineVersion = 'pipeline_v3';
-
-  /// Input resolution of the bundled landmark model.
-  ///
-  /// Must match the bundled TFLite model's native input shape. The interpreter
-  /// accepts a mismatched `resizeInputTensor` without erroring and then emits
-  /// garbage coordinates, so this is declared once rather than at each call
-  /// site where the two could silently drift apart.
-  static const int _landmarkInputSize = 384;
-
-  /// Input resolution of the bundled face localizer model.
-  static const int _localizerInputSize = 224;
 
   /// Version key for the default dog detection pipeline.
   ///
@@ -57,14 +103,6 @@ class DogDetector {
         'poseModel=${poseModel.name}:landmarkModel=${landmarkModel.name}:'
         '$_pipelineVersion';
   }
-
-  // Animal detection pipeline (full / poseOnly)
-  AnimalDetector? _animalDetector;
-
-  // Face pipeline (full / faceOnly)
-  FaceLocalizerModel? _localizer;
-  LandmarkModelRunnerBase? _lm;
-  EnsembleLandmarkModelBase? _ensemble;
 
   /// Detection mode controlling pipeline behavior.
   final DogDetectionMode mode;
@@ -91,7 +129,7 @@ class DogDetector {
   /// - Android/macOS/Linux/Windows: XNNPACK (2-5x SIMD acceleration)
   final PerformanceConfig performanceConfig;
 
-  bool _isInitialized = false;
+  _DogDetectorWorker? _worker;
 
   /// Creates a dog detector with the specified configuration.
   DogDetector({
@@ -106,216 +144,11 @@ class DogDetector {
             ? interpreterPoolSize
             : 1;
 
-  /// Initializes the detector by loading TensorFlow Lite models.
-  ///
-  /// Must be called before [detect] or [detectFromMat].
-  /// If already initialized, disposes existing models before reinitializing.
-  ///
-  /// When [poseModel] is [AnimalPoseModel.hrnet], the HRNet model (~54.6 MB) is
-  /// downloaded from GitHub Releases on first use and cached locally.
-  ///
-  /// When [landmarkModel] is [DogLandmarkModel.ensemble], the extra 256px and
-  /// 320px models (~110 MB total) are downloaded on first use.
-  ///
-  /// [onDownloadProgress] is called during any model download with
-  /// (modelName, bytesReceived, totalBytes).
-  Future<void> initialize({
-    void Function(String model, int received, int total)? onDownloadProgress,
-    bool useIsolateInterpreter = true,
-  }) async {
-    if (_isInitialized) {
-      await dispose();
-    }
-
-    final bool needsBody =
-        mode == DogDetectionMode.full || mode == DogDetectionMode.poseOnly;
-    final bool needsFace =
-        mode == DogDetectionMode.full || mode == DogDetectionMode.faceOnly;
-
-    if (needsBody) {
-      _animalDetector = AnimalDetector(
-        poseModel: poseModel,
-        enablePose: true,
-        cropMargin: cropMargin,
-        detThreshold: detThreshold,
-        performanceConfig: performanceConfig,
-      );
-      await _animalDetector!.initialize(
-        onDownloadProgress: onDownloadProgress,
-        useIsolateInterpreter: useIsolateInterpreter,
-      );
-    }
-
-    if (needsFace) {
-      _localizer = FaceLocalizerModel(
-        inputSize: _localizerInputSize,
-        modelPath:
-            'packages/dog_detection/assets/models/dog_face_localizer.tflite',
-      );
-      await _localizer!.initialize(
-        performanceConfig,
-        useIsolateInterpreter: useIsolateInterpreter,
-      );
-
-      if (landmarkModel == DogLandmarkModel.ensemble) {
-        _ensemble = EnsembleLandmarkModelBase(
-          numLandmarks: numDogLandmarks,
-          flipIndex: dogLandmarkFlipIndex,
-          bundledModelPath:
-              'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',
-          getEnsembleModels: DogModelDownloader.getEnsembleModels,
-          poolSize: interpreterPoolSize,
-        );
-        await _ensemble!.initialize(
-          performanceConfig,
-          onDownloadProgress: onDownloadProgress,
-          useIsolateInterpreter: useIsolateInterpreter,
-        );
-      } else {
-        _lm = LandmarkModelRunnerBase(
-          inputSize: _landmarkInputSize,
-          numLandmarks: numDogLandmarks,
-          modelPath:
-              'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',
-          poolSize: interpreterPoolSize,
-        );
-        await _lm!.initialize(
-          performanceConfig,
-          useIsolateInterpreter: useIsolateInterpreter,
-        );
-      }
-    }
-
-    _isInitialized = true;
-  }
-
-  /// Initializes the detector from pre-loaded model bytes.
-  ///
-  /// Used by [DogDetectorIsolate] to initialize within a background isolate
-  /// where Flutter asset loading is not available.
-  Future<void> initializeFromBuffers({
-    Uint8List? localizerBytes,
-    Uint8List? landmarkBytes,
-    Uint8List? ensemble256Bytes,
-    Uint8List? ensemble320Bytes,
-    Uint8List? bodyDetectorBytes,
-    Uint8List? classifierBytes,
-    String? speciesMappingJson,
-    Uint8List? poseModelBytes,
-    bool useIsolateInterpreter = true,
-  }) async {
-    if (_isInitialized) {
-      await dispose();
-    }
-
-    final bool needsBody =
-        mode == DogDetectionMode.full || mode == DogDetectionMode.poseOnly;
-    final bool needsFace =
-        mode == DogDetectionMode.full || mode == DogDetectionMode.faceOnly;
-
-    if (needsBody) {
-      if (bodyDetectorBytes == null) {
-        throw ArgumentError(
-          'bodyDetectorBytes is required for full/poseOnly mode',
-        );
-      }
-      if (classifierBytes == null) {
-        throw ArgumentError(
-          'classifierBytes is required for full/poseOnly mode',
-        );
-      }
-      if (speciesMappingJson == null) {
-        throw ArgumentError(
-          'speciesMappingJson is required for full/poseOnly mode',
-        );
-      }
-      if (poseModelBytes == null) {
-        throw ArgumentError(
-          'poseModelBytes is required for full/poseOnly mode',
-        );
-      }
-
-      _animalDetector = AnimalDetector(
-        poseModel: poseModel,
-        enablePose: true,
-        cropMargin: cropMargin,
-        detThreshold: detThreshold,
-        performanceConfig: performanceConfig,
-      );
-      await _animalDetector!.initializeFromBuffers(
-        bodyDetectorBytes: bodyDetectorBytes,
-        classifierBytes: classifierBytes,
-        speciesMappingJson: speciesMappingJson,
-        poseModelBytes: poseModelBytes,
-        useIsolateInterpreter: useIsolateInterpreter,
-      );
-    }
-
-    if (needsFace) {
-      if (localizerBytes == null) {
-        throw ArgumentError(
-          'localizerBytes is required for full/faceOnly mode',
-        );
-      }
-      if (landmarkBytes == null) {
-        throw ArgumentError(
-          'landmarkBytes is required for full/faceOnly mode',
-        );
-      }
-
-      _localizer = FaceLocalizerModel(
-        inputSize: _localizerInputSize,
-        modelPath:
-            'packages/dog_detection/assets/models/dog_face_localizer.tflite',
-      );
-      await _localizer!.initializeFromBuffer(
-        localizerBytes,
-        performanceConfig,
-        useIsolateInterpreter: useIsolateInterpreter,
-      );
-
-      if (landmarkModel == DogLandmarkModel.ensemble) {
-        if (ensemble256Bytes == null || ensemble320Bytes == null) {
-          throw ArgumentError(
-            'ensemble256Bytes and ensemble320Bytes are required for ensemble mode',
-          );
-        }
-        _ensemble = EnsembleLandmarkModelBase(
-          numLandmarks: numDogLandmarks,
-          flipIndex: dogLandmarkFlipIndex,
-          bundledModelPath:
-              'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',
-          getEnsembleModels: DogModelDownloader.getEnsembleModels,
-          poolSize: interpreterPoolSize,
-        );
-        await _ensemble!.initializeFromBuffers(
-          bytes256: ensemble256Bytes,
-          bytes320: ensemble320Bytes,
-          bytes384: landmarkBytes,
-          performanceConfig: performanceConfig,
-          useIsolateInterpreter: useIsolateInterpreter,
-        );
-      } else {
-        _lm = LandmarkModelRunnerBase(
-          inputSize: _landmarkInputSize,
-          numLandmarks: numDogLandmarks,
-          modelPath:
-              'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',
-          poolSize: interpreterPoolSize,
-        );
-        await _lm!.initializeFromBuffer(
-          landmarkBytes,
-          performanceConfig,
-          useIsolateInterpreter: useIsolateInterpreter,
-        );
-      }
-    }
-
-    _isInitialized = true;
-  }
+  /// Returns true if the detector has been initialized and is ready to use.
+  bool get isReady => _worker?.isReady ?? false;
 
   /// Returns true if the detector has been initialized and is ready to use.
-  bool get isInitialized => _isInitialized;
+  bool get isInitialized => isReady;
 
   /// Returns true if the ensemble models are already cached locally.
   static Future<bool> isEnsembleCached() =>
@@ -324,209 +157,383 @@ class DogDetector {
   /// Returns true if the HRNet model is already cached locally.
   static Future<bool> isHrnetCached() => ModelDownloader.isHrnetCached();
 
-  /// Releases all resources used by the detector.
-  Future<void> dispose() async {
-    await _animalDetector?.dispose();
-    _localizer?.dispose();
-    _lm?.dispose();
-    _ensemble?.dispose();
-    _animalDetector = null;
-    _localizer = null;
-    _lm = null;
-    _ensemble = null;
-    _isInitialized = false;
-  }
-
-  /// Detects dogs in an image from raw bytes.
-  Future<List<Dog>> detect(Uint8List imageBytes) async {
-    if (!_isInitialized) {
-      throw StateError('DogDetector not initialized. Call initialize() first.');
+  /// Loads TensorFlow Lite models and spawns the background detection isolate.
+  ///
+  /// Must be called before [detect] or [detectFromMat]. Model assets are read on
+  /// the main isolate (where `rootBundle` is available) and transferred into the
+  /// worker, so this takes 100-500ms depending on the device.
+  ///
+  /// When [poseModel] is [AnimalPoseModel.hrnet], the HRNet model (~54.6 MB) is
+  /// downloaded from GitHub Releases on first use and cached locally.
+  ///
+  /// When [landmarkModel] is [DogLandmarkModel.ensemble], the extra 256px and
+  /// 320px models are downloaded on first use.
+  ///
+  /// [onDownloadProgress] is called during any model download with
+  /// (modelName, bytesReceived, totalBytes).
+  Future<void> initialize({
+    void Function(String model, int received, int total)? onDownloadProgress,
+  }) async {
+    if (_worker != null) {
+      await dispose();
     }
-    try {
-      final mat = cv.imdecode(imageBytes, cv.IMREAD_COLOR);
-      if (mat.isEmpty) {
-        return <Dog>[];
-      }
-      try {
-        return await detectFromMat(
-          mat,
-          imageWidth: mat.cols,
-          imageHeight: mat.rows,
+
+    final bool needsFace =
+        mode == DogDetectionMode.full || mode == DogDetectionMode.faceOnly;
+    final bool needsBody =
+        mode == DogDetectionMode.full || mode == DogDetectionMode.poseOnly;
+
+    // Face pipeline assets
+    TransferableTypedData? localizerTtd;
+    TransferableTypedData? landmarkTtd;
+    TransferableTypedData? ensemble256;
+    TransferableTypedData? ensemble320;
+
+    if (needsFace) {
+      const localizerPath =
+          'packages/dog_detection/assets/models/dog_face_localizer.tflite';
+      const landmarkPath =
+          'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite';
+
+      final results = await Future.wait([
+        rootBundle.load(localizerPath),
+        rootBundle.load(landmarkPath),
+      ]);
+
+      localizerTtd = TransferableTypedData.fromList(
+        [results[0].buffer.asUint8List()],
+      );
+      landmarkTtd = TransferableTypedData.fromList(
+        [results[1].buffer.asUint8List()],
+      );
+
+      if (landmarkModel == DogLandmarkModel.ensemble) {
+        final (bytes256, bytes320) = await DogModelDownloader.getEnsembleModels(
+          onProgress: onDownloadProgress,
         );
-      } finally {
-        mat.dispose();
+        ensemble256 = TransferableTypedData.fromList([bytes256]);
+        ensemble320 = TransferableTypedData.fromList([bytes320]);
       }
-    } catch (e) {
-      return <Dog>[];
     }
+
+    // Body pipeline assets
+    TransferableTypedData? bodyDetectorTtd;
+    TransferableTypedData? classifierTtd;
+    String? speciesMappingJson;
+    TransferableTypedData? poseModelTtd;
+
+    if (needsBody) {
+      const bodyDetectorPath =
+          'packages/animal_detection/assets/models/superanimal_ssdlite_float16.tflite';
+      const classifierPath =
+          'packages/animal_detection/assets/models/species_classifier_float16.tflite';
+      const speciesMappingPath =
+          'packages/animal_detection/assets/models/species_mapping.json';
+
+      final bodyResults = await Future.wait([
+        rootBundle.load(bodyDetectorPath),
+        rootBundle.load(classifierPath),
+        rootBundle.loadString(speciesMappingPath),
+      ]);
+
+      bodyDetectorTtd = TransferableTypedData.fromList(
+        [(bodyResults[0] as ByteData).buffer.asUint8List()],
+      );
+      classifierTtd = TransferableTypedData.fromList(
+        [(bodyResults[1] as ByteData).buffer.asUint8List()],
+      );
+      speciesMappingJson = bodyResults[2] as String;
+
+      if (poseModel == AnimalPoseModel.hrnet) {
+        final hrnetBytes = await ModelDownloader.getHrnetModel(
+          onProgress: onDownloadProgress == null
+              ? null
+              : (received, total) => onDownloadProgress(
+                  ModelDownloader.modelHrnet, received, total),
+        );
+        poseModelTtd = TransferableTypedData.fromList([hrnetBytes]);
+      } else {
+        const rtmposePath =
+            'packages/animal_detection/assets/models/superanimal_rtmpose_s_float16.tflite';
+        final rtmposeData = await rootBundle.load(rtmposePath);
+        poseModelTtd = TransferableTypedData.fromList(
+          [rtmposeData.buffer.asUint8List()],
+        );
+      }
+    }
+
+    final worker = _DogDetectorWorker();
+    try {
+      await worker.initialize(
+        startupData: (SendPort sendPort) => _IsolateStartupData(
+          sendPort: sendPort,
+          localizerBytes: localizerTtd,
+          landmarkBytes: landmarkTtd,
+          ensemble256Bytes: ensemble256,
+          ensemble320Bytes: ensemble320,
+          bodyDetectorBytes: bodyDetectorTtd,
+          classifierBytes: classifierTtd,
+          speciesMappingJson: speciesMappingJson,
+          poseModelBytes: poseModelTtd,
+          poseModelName: poseModel.name,
+          modeName: mode.name,
+          landmarkModelName: landmarkModel.name,
+          cropMargin: cropMargin,
+          detThreshold: detThreshold,
+          interpreterPoolSize: interpreterPoolSize,
+          performanceModeName: performanceConfig.mode.name,
+          numThreads: performanceConfig.numThreads,
+        ),
+      );
+    } catch (_) {
+      await worker.dispose();
+      rethrow;
+    }
+    _worker = worker;
   }
 
-  /// Detects dogs in an OpenCV Mat image.
+  /// Detects dogs in an encoded image (JPEG, PNG, etc.).
+  ///
+  /// Decoding and inference both happen in the background isolate.
+  ///
+  /// Throws [StateError] if called before [initialize].
+  Future<List<Dog>> detect(Uint8List imageBytes) async {
+    final worker = _requireWorker();
+    final result = await worker.sendRequest<List<dynamic>>(
+      'detect',
+      {
+        'bytes': TransferableTypedData.fromList([imageBytes])
+      },
+    );
+    return _deserializeDogs(result);
+  }
+
+  /// Detects dogs in a pre-decoded [cv.Mat].
+  ///
+  /// The raw pixel data is transferred to the isolate using zero-copy
+  /// [TransferableTypedData]. The supplied Mat is NOT disposed by this method.
+  ///
+  /// [imageWidth] and [imageHeight] default to the Mat's own dimensions and only
+  /// need to be passed when they differ.
+  ///
+  /// Throws [StateError] if called before [initialize].
   Future<List<Dog>> detectFromMat(
     cv.Mat image, {
-    required int imageWidth,
-    required int imageHeight,
+    int? imageWidth,
+    int? imageHeight,
   }) async {
-    if (!_isInitialized) {
+    final worker = _requireWorker();
+    final result = await worker.sendRequest<List<dynamic>>(
+      'detectMat',
+      {
+        'bytes': TransferableTypedData.fromList([image.data]),
+        'width': imageWidth ?? image.cols,
+        'height': imageHeight ?? image.rows,
+        'matType': image.type.value,
+      },
+    );
+    return _deserializeDogs(result);
+  }
+
+  /// Releases the background isolate and all native model resources.
+  ///
+  /// After disposing, call [initialize] again before detecting.
+  Future<void> dispose() async {
+    final worker = _worker;
+    _worker = null;
+    if (worker == null) return;
+
+    // Graceful shutdown: sends 'dispose' as an RPC and awaits the ack before
+    // force-killing the isolate, so it can free its native TFLite interpreters
+    // instead of being reaped mid-cleanup by Isolate.kill(priority: immediate).
+    await worker.disposeGracefully();
+  }
+
+  _DogDetectorWorker _requireWorker() {
+    final worker = _worker;
+    if (worker == null || !worker.isReady) {
       throw StateError('DogDetector not initialized. Call initialize() first.');
     }
-
-    if (mode == DogDetectionMode.faceOnly) {
-      return _detectFaceOnly(image, imageWidth, imageHeight);
-    }
-
-    return _detectWithBody(image, imageWidth, imageHeight);
+    return worker;
   }
 
-  /// Pipeline for [DogDetectionMode.faceOnly]: legacy face-only behavior.
-  Future<List<Dog>> _detectFaceOnly(
-    cv.Mat image,
-    int imageWidth,
-    int imageHeight,
-  ) async {
-    final BoundingBox? bbox = await _localizer!.detect(image);
-    if (bbox == null) return <Dog>[];
+  List<Dog> _deserializeDogs(List<dynamic> result) => result
+      .map((map) => Dog.fromMap(Map<String, dynamic>.from(map as Map)))
+      .toList();
 
-    final DogFace face =
-        await _runFaceLandmarks(image, bbox, imageWidth, imageHeight);
-
-    return [
-      Dog(
-        boundingBox: bbox,
-        score: 1.0,
-        face: face,
-        imageWidth: imageWidth,
-        imageHeight: imageHeight,
-      ),
-    ];
+  /// Reconstructs a [cv.Mat] from raw bytes WITHOUT the boxed, double-copy
+  /// `cv.Mat.fromList` path (it takes a `List<num>`, boxing every byte and
+  /// copying twice, ~100x slower for full frames). Allocates once with
+  /// `Mat.create` and bulk-copies into the Mat's contiguous native data view.
+  static cv.Mat _matFromBytes(
+    int rows,
+    int cols,
+    cv.MatType type,
+    Uint8List bytes,
+  ) {
+    final mat = cv.Mat.create(rows: rows, cols: cols, type: type);
+    mat.data.setRange(0, bytes.length, bytes);
+    return mat;
   }
 
-  /// Pipeline for [DogDetectionMode.full] and [DogDetectionMode.poseOnly].
+  /// Isolate entry point: builds a [DogDetectorCore] from the transferred model
+  /// bytes, then serves detection requests.
   ///
-  /// Uses [AnimalDetector] for SSD detection, species classification, and pose
-  /// estimation, then runs face detection on each detected dog.
-  Future<List<Dog>> _detectWithBody(
-    cv.Mat image,
-    int imageWidth,
-    int imageHeight,
-  ) async {
-    // Stage 1-3: Run animal detection (SSD + species + pose)
-    final animals = await _animalDetector!.detectFromMat(
-      image,
-      imageWidth: imageWidth,
-      imageHeight: imageHeight,
-    );
-    if (animals.isEmpty) return <Dog>[];
+  /// Sends its [SendPort] back to the main isolate on success, or an error map
+  /// on failure.
+  @pragma('vm:entry-point')
+  static void _isolateEntry(_IsolateStartupData data) async {
+    final SendPort mainSendPort = data.sendPort;
+    final ReceivePort workerReceivePort = ReceivePort();
 
-    final dogs = <Dog>[];
+    DogDetectorCore? detector;
 
-    for (int i = 0; i < animals.length; i++) {
-      final animal = animals[i];
-      DogFace? face;
-
-      // Stage 4: face detection (full mode only)
-      if (mode == DogDetectionMode.full) {
-        // Expand bbox for the face crop (same margin as used for pose)
-        final (cx1, cy1, cx2, cy2) = ImageUtils.expandBox(
-          animal.boundingBox.left,
-          animal.boundingBox.top,
-          animal.boundingBox.right,
-          animal.boundingBox.bottom,
-          cropMargin,
-          imageWidth,
-          imageHeight,
-        );
-
-        final int cropW = cx2 - cx1;
-        final int cropH = cy2 - cy1;
-        if (cropW >= 1 && cropH >= 1) {
-          final expandedCrop = image.region(cv.Rect(cx1, cy1, cropW, cropH));
-          try {
-            // Detect face in the dog crop space
-            final BoundingBox? faceBboxInCrop =
-                await _localizer!.detect(expandedCrop);
-
-            if (faceBboxInCrop != null) {
-              // Offset face bbox from crop space to original image space
-              final faceBboxInImage = BoundingBox.ltrb(
-                faceBboxInCrop.left + cx1,
-                faceBboxInCrop.top + cy1,
-                faceBboxInCrop.right + cx1,
-                faceBboxInCrop.bottom + cy1,
-              );
-
-              face = await _runFaceLandmarks(
-                image,
-                faceBboxInImage,
-                imageWidth,
-                imageHeight,
-              );
-            }
-          } finally {
-            expandedCrop.dispose();
-          }
-        }
-      }
-
-      dogs.add(Dog(
-        boundingBox: animal.boundingBox,
-        score: animal.score,
-        species: animal.species,
-        breed: animal.breed,
-        speciesConfidence: animal.speciesConfidence,
-        face: face,
-        pose: animal.pose,
-        imageWidth: imageWidth,
-        imageHeight: imageHeight,
-      ));
-    }
-
-    return dogs;
-  }
-
-  /// Crops the face region from [image] using [faceBbox] and runs landmark estimation.
-  Future<DogFace> _runFaceLandmarks(
-    cv.Mat image,
-    BoundingBox faceBbox,
-    int imageWidth,
-    int imageHeight,
-  ) async {
-    final int cropSize = landmarkModel == DogLandmarkModel.ensemble
-        ? _ensemble!.inputSize
-        : _lm!.inputSize;
-
-    final (faceCrop, meta) = ImageUtils.cropAndResize(
-      image,
-      faceBbox,
-      cropMargin,
-      cropSize,
-    );
-
-    final List<DogLandmark> landmarks;
     try {
-      if (landmarkModel == DogLandmarkModel.ensemble) {
-        final coords = await _ensemble!.predictRaw(faceCrop, meta);
-        landmarks = [
-          for (int i = 0; i < coords.length; i++)
-            DogLandmark(
-                type: DogLandmarkType.values[i],
-                x: coords[i].$1,
-                y: coords[i].$2),
-        ];
-      } else {
-        final coords = await _lm!.predictRaw(faceCrop, meta);
-        landmarks = [
-          for (int i = 0; i < coords.length; i++)
-            DogLandmark(
-                type: DogLandmarkType.values[i],
-                x: coords[i].$1,
-                y: coords[i].$2),
-        ];
-      }
-    } finally {
-      faceCrop.dispose();
+      final localizerBytes = data.localizerBytes?.materialize().asUint8List();
+      final landmarkBytes = data.landmarkBytes?.materialize().asUint8List();
+      final ensemble256Bytes =
+          data.ensemble256Bytes?.materialize().asUint8List();
+      final ensemble320Bytes =
+          data.ensemble320Bytes?.materialize().asUint8List();
+
+      final bodyDetectorBytes =
+          data.bodyDetectorBytes?.materialize().asUint8List();
+      final classifierBytes = data.classifierBytes?.materialize().asUint8List();
+      final poseModelBytes = data.poseModelBytes?.materialize().asUint8List();
+
+      final mode = DogDetectionMode.values.firstWhere(
+        (m) => m.name == data.modeName,
+      );
+      final poseModel = AnimalPoseModel.values.firstWhere(
+        (m) => m.name == data.poseModelName,
+      );
+      final landmarkModel = DogLandmarkModel.values.firstWhere(
+        (m) => m.name == data.landmarkModelName,
+      );
+      final performanceMode = PerformanceMode.values.firstWhere(
+        (m) => m.name == data.performanceModeName,
+      );
+
+      detector = DogDetectorCore(
+        mode: mode,
+        poseModel: poseModel,
+        landmarkModel: landmarkModel,
+        cropMargin: data.cropMargin,
+        detThreshold: data.detThreshold,
+        interpreterPoolSize: data.interpreterPoolSize,
+        performanceConfig: PerformanceConfig(
+          mode: performanceMode,
+          numThreads: data.numThreads,
+        ),
+      );
+
+      await detector.initializeFromBuffers(
+        localizerBytes: localizerBytes,
+        landmarkBytes: landmarkBytes,
+        ensemble256Bytes: ensemble256Bytes,
+        ensemble320Bytes: ensemble320Bytes,
+        bodyDetectorBytes: bodyDetectorBytes,
+        classifierBytes: classifierBytes,
+        speciesMappingJson: data.speciesMappingJson,
+        poseModelBytes: poseModelBytes,
+        useIsolateInterpreter: false,
+      );
+
+      mainSendPort.send(workerReceivePort.sendPort);
+    } catch (e, st) {
+      mainSendPort.send({
+        'error': 'Dog detection isolate initialization failed: $e\n$st',
+      });
+      return;
     }
 
-    return DogFace(boundingBox: faceBbox, landmarks: landmarks);
+    workerReceivePort.listen((message) async {
+      if (message is! Map) return;
+
+      final int? id = message['id'] as int?;
+      final String? op = message['op'] as String?;
+
+      if (id == null || op == null) return;
+
+      try {
+        switch (op) {
+          case 'detect':
+            if (detector == null || !detector!.isInitialized) {
+              mainSendPort.send({
+                'id': id,
+                'error': 'DogDetector not initialized in isolate',
+              });
+              return;
+            }
+
+            final ByteBuffer bb =
+                (message['bytes'] as TransferableTypedData).materialize();
+            final dogs = await detector!.detect(bb.asUint8List());
+
+            mainSendPort.send({
+              'id': id,
+              'result': dogs.map((c) => c.toMap()).toList(),
+            });
+
+          case 'detectMat':
+            if (detector == null || !detector!.isInitialized) {
+              mainSendPort.send({
+                'id': id,
+                'error': 'DogDetector not initialized in isolate',
+              });
+              return;
+            }
+
+            final ByteBuffer bb =
+                (message['bytes'] as TransferableTypedData).materialize();
+            final int width = message['width'] as int;
+            final int height = message['height'] as int;
+            final matType = cv.MatType(message['matType'] as int);
+            final mat = _matFromBytes(height, width, matType, bb.asUint8List());
+
+            try {
+              final dogs = await detector!.detectFromMat(
+                mat,
+                imageWidth: width,
+                imageHeight: height,
+              );
+              mainSendPort.send({
+                'id': id,
+                'result': dogs.map((c) => c.toMap()).toList(),
+              });
+            } finally {
+              mat.dispose();
+            }
+
+          case 'dispose':
+            await detector?.dispose();
+            detector = null;
+            mainSendPort.send({'id': id, 'result': true});
+            workerReceivePort.close();
+        }
+      } catch (e, st) {
+        mainSendPort.send({'id': id, 'error': '$e\n$st'});
+      }
+    });
+  }
+}
+
+/// Owns the detection isolate and its RPC channel.
+class _DogDetectorWorker extends IsolateWorkerBase {
+  @override
+  String get workerDisposeOp => 'dispose';
+
+  Future<void> initialize({
+    required _IsolateStartupData Function(SendPort sendPort) startupData,
+  }) async {
+    await initWorker(
+      (sendPort) => Isolate.spawn(
+        DogDetector._isolateEntry,
+        startupData(sendPort),
+        debugName: 'DogDetector',
+      ),
+      timeout: const Duration(seconds: 60),
+      timeoutMessage: 'Dog detection isolate initialization timed out',
+    );
   }
 }
