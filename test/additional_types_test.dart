@@ -5,15 +5,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // ---------------------------------------------------------------------------
-  // DogLandmarkModel, ensemble.name gap
-  // ---------------------------------------------------------------------------
-  group('DogLandmarkModel, ensemble name', () {
-    test('ensemble name is ensemble', () {
-      expect(DogLandmarkModel.ensemble.name, 'ensemble');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
   // Point, z coordinate, is3D, toString, ==, hashCode, toMap/fromMap
   // ---------------------------------------------------------------------------
   group('Point extended', () {

@@ -85,7 +85,6 @@ jobs:
           TEST_FILES=(
             dog_detector_integration_test.dart
             dachshund_debug_test.dart
-            ensemble_compare_test.dart
             pipeline_test.dart
           )
           FAILED=()
@@ -342,7 +341,6 @@ jobs:
           TEST_FILES=(
             dog_detector_integration_test.dart
             dachshund_debug_test.dart
-            ensemble_compare_test.dart
             pipeline_test.dart
           )
           FAILED=()
@@ -411,7 +409,6 @@ jobs:
           TEST_FILES=(
             dog_detector_integration_test.dart
             dachshund_debug_test.dart
-            ensemble_compare_test.dart
             pipeline_test.dart
           )
           FAILED=()

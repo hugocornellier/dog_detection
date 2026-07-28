@@ -46,7 +46,6 @@
 ///
 /// **Face Landmark Model Variants:**
 /// - [DogLandmarkModel.full]: Single model at 384px input resolution (bundled)
-/// - [DogLandmarkModel.ensemble]: 3-model ensemble (256+320+384px) with multi-scale
 ///   + flip TTA (18 passes). Extra models downloaded on-demand from GitHub Releases (~110MB)
 ///
 /// **Skeleton Connections:**

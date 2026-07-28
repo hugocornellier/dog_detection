@@ -1,5 +1,19 @@
 ## 2.0.0
 
+* **Removed** `DogLandmarkModel.ensemble`. Swapping the bundled 384px model to
+  MobileNetV3Large left the ensemble mixing backbones: the two downloaded
+  members are still EfficientNetV2S, so the published accuracy figure, measured
+  when all three members shared a backbone, no longer described what the mode
+  actually ran. Re-validating it was not worthwhile. The EfficientNetV2S members
+  measured 156 ms and 242 ms per inference against the bundled model's 83 ms, so
+  the mode cost roughly 960 ms/frame and 109 MB of downloads. Unlike the single
+  bundled model it was never re-measured after the swap, so it was returning
+  results of unknown quality. `DogDetector.isEnsembleCached()` is removed with
+  it. `DogLandmarkModel.full` is unchanged and remains the default.
+
+  The `v0.0.1-models` GitHub release is retained so existing 1.x installations
+  keep working.
+
 * `DogDetector` now runs the whole pipeline in a background isolate that it owns.
   `initialize()` loads the model assets on the main isolate (where `rootBundle`
   is available) and transfers them into a worker it spawns, so detection no
@@ -33,8 +47,10 @@
 * Require animal_detection 2.0.0, which replaces its boxed nested input and
   output tensors with reused flat `Float32List`s handed to TFLite as
   `ByteBuffer`s. Measured on this pipeline over a 3264x2448 photo in profile
-  mode with `PerformanceMode.auto`, the full pipeline drops from 438 ms/frame to
-  109 ms/frame and poseOnly from about 44 ms to 15 ms.
+  mode with `PerformanceMode.auto`, poseOnly drops from 48.2 ms/frame to
+  15.1 ms, a 3.2x speedup on the shared body pipeline. The full pipeline goes
+  from 452.1 ms/frame to 114.5 ms, though that figure also includes the
+  landmark model swap below rather than the tensor change alone.
 
 * Landmark and pose coordinates shift slightly. animal_detection 2.0.0 fixes
   `ImageUtils.cropAndResize` describing an integral crop with pre-truncation

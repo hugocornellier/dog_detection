@@ -31,10 +31,6 @@ void main() {
         DogDetector.modelVersionFor(poseModel: AnimalPoseModel.hrnet),
         isNot(base),
       );
-      expect(
-        DogDetector.modelVersionFor(landmarkModel: DogLandmarkModel.ensemble),
-        isNot(base),
-      );
     });
   });
 
@@ -75,16 +71,16 @@ void main() {
   // DogLandmarkModel enum
   // ---------------------------------------------------------------------------
   group('DogLandmarkModel enum', () {
-    test('has exactly 2 values', () {
-      expect(DogLandmarkModel.values.length, 2);
+    test('has exactly 1 value', () {
+      expect(DogLandmarkModel.values.length, 1);
     });
 
     test('full is at index 0', () {
       expect(DogLandmarkModel.full.index, 0);
     });
 
-    test('ensemble is at index 1', () {
-      expect(DogLandmarkModel.ensemble.index, 1);
+    test('full is the only variant', () {
+      expect(DogLandmarkModel.values, [DogLandmarkModel.full]);
     });
 
     test('name property works', () {

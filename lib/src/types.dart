@@ -18,20 +18,9 @@ import 'package:animal_detection/animal_detection.dart';
 /// Dog landmark model variant for landmark extraction.
 ///
 /// - [full]: Single model at 384px input resolution (bundled, ~11MB).
-/// - [ensemble]: 3-model ensemble (256px + 320px + 384px) averaging predictions.
-///   The 256px and 320px models are downloaded on-demand from GitHub Releases on
-///   first use (~110MB total download).
-///
-///   Note: the bundled 384px member is a MobileNetV3Large model while the two
-///   downloaded members are EfficientNetV2S, so the ensemble now mixes
-///   backbones. Its accuracy has not been re-measured since that change; the
-///   previously reported ensemble gain was for three EfficientNetV2S models.
 enum DogLandmarkModel {
   /// Full model at 384px input resolution (bundled with the package).
   full,
-
-  /// 3-model ensemble (256px + 320px + 384px) with multi-scale + flip TTA.
-  ensemble,
 }
 
 /// Detection mode controlling the full pipeline behavior.
@@ -200,7 +189,7 @@ const int numDogLandmarks = 46;
 /// Landmark index permutation for horizontal flip (DogFLW convention).
 ///
 /// When an image is horizontally flipped, left/right landmarks swap.
-/// Used internally by the ensemble model for flip test-time augmentation.
+/// Mirror-pair mapping for horizontal-flip augmentation.
 const List<int> dogLandmarkFlipIndex = [
   1,
   0,
