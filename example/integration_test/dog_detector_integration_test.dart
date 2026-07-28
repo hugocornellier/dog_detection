@@ -783,6 +783,84 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // 8b. DogDetector - faceOnly mode
+  // ---------------------------------------------------------------------------
+
+  group('DogDetector - faceOnly mode', () {
+    testWidgets('returns face landmarks without the body stages',
+        (tester) async {
+      final detector = DogDetector(mode: DogDetectionMode.faceOnly);
+      await detector.initialize();
+
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
+
+      try {
+        final results = await detector.detectFromMat(mat);
+        expect(results, isNotEmpty);
+
+        final dog = results.first;
+        expect(dog.face, isNotNull);
+        expect(dog.face!.landmarks.length, numDogLandmarks);
+
+        // The body pipeline never runs, so there is no pose.
+        expect(dog.pose, isNull);
+
+        // The bounding box is the face, not the body.
+        expect(dog.boundingBox.right, greaterThan(dog.boundingBox.left));
+        expect(dog.boundingBox.bottom, greaterThan(dog.boundingBox.top));
+        expect(dog.boundingBox.left, greaterThanOrEqualTo(0));
+        expect(dog.boundingBox.right, lessThanOrEqualTo(mat.cols.toDouble()));
+
+        for (final lm in dog.face!.landmarks) {
+          expect(lm.x.isFinite, isTrue);
+          expect(lm.y.isFinite, isTrue);
+        }
+      } finally {
+        mat.dispose();
+      }
+
+      await detector.dispose();
+    });
+
+    testWidgets('is faster than full mode on the same image', (tester) async {
+      final ByteData data =
+          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
+      addTearDown(mat.dispose);
+
+      Future<double> bench(DogDetectionMode mode) async {
+        final d = DogDetector(mode: mode);
+        await d.initialize();
+        try {
+          for (int i = 0; i < 2; i++) {
+            await d.detectFromMat(mat);
+          }
+          final sw = Stopwatch()..start();
+          for (int i = 0; i < 5; i++) {
+            await d.detectFromMat(mat);
+          }
+          sw.stop();
+          return sw.elapsedMicroseconds / 5 / 1000.0;
+        } finally {
+          await d.dispose();
+        }
+      }
+
+      final fullMs = await bench(DogDetectionMode.full);
+      final faceMs = await bench(DogDetectionMode.faceOnly);
+      debugPrint('FACEONLY full=${fullMs.toStringAsFixed(1)}ms '
+          'faceOnly=${faceMs.toStringAsFixed(1)}ms '
+          'saved=${(fullMs - faceMs).toStringAsFixed(1)}ms');
+
+      // faceOnly skips SSD, species and pose, so it must be cheaper. Debug-mode
+      // timings are noisy, so this only asserts the direction.
+      expect(faceMs, lessThan(fullMs));
+    }, timeout: const Timeout(Duration(minutes: 5)));
+  });
+
+  // ---------------------------------------------------------------------------
   // 9. DogDetector isolate execution
   //
   // DogDetector owns a background isolate internally, so these exercise the

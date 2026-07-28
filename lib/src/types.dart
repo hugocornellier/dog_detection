@@ -35,7 +35,21 @@ enum DogDetectionMode {
   /// Body detection + species + body pose only (no face detection).
   poseOnly,
 
-  /// Face-only mode: face localizer + face landmarks (legacy behavior, no SSD).
+  /// Face localizer + face landmarks only, with no SSD body stage.
+  ///
+  /// The localizer runs on the whole letterboxed image, which is the input it
+  /// was trained on. [full] instead runs it inside an SSD body crop, where the
+  /// face fills more of the frame.
+  ///
+  /// Skips body detection, species classification and body pose, so the ~23MB
+  /// of models backing those stages are never loaded and roughly 15ms per
+  /// frame is saved.
+  ///
+  /// Two consequences: the localizer emits a single box, so this mode returns
+  /// at most one face regardless of how many dogs are present, and the
+  /// resulting [Dog] has no species, breed or pose, with its bounding box set
+  /// to the face rather than the body. Use [full] for multiple dogs or when any
+  /// of that body information is needed.
   faceOnly,
 }
 

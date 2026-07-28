@@ -1,5 +1,12 @@
 ## 2.0.0
 
+* Documented `DogDetectionMode.faceOnly` properly. Behavior is unchanged, but
+  it was described only as "legacy behavior, no SSD". It runs the face localizer
+  on the whole letterboxed image, which is the input the localizer was trained
+  on, and skips the roughly 23MB of body-stage models entirely. The localizer
+  emits a single box, so the mode returns at most one face however many dogs are
+  present, and the returned `Dog` has no species, breed or pose.
+
 * **Removed** `DogLandmarkModel.ensemble`. Swapping the bundled 384px model to
   MobileNetV3Large left the ensemble mixing backbones: the two downloaded
   members are still EfficientNetV2S, so the published accuracy figure, measured
