@@ -35,6 +35,11 @@ class _IsolateStartupData {
   final int interpreterPoolSize;
   final String performanceModeName;
   final int? numThreads;
+  // Null means the landmark stage follows performanceModeName. PerformanceConfig
+  // is not sendable across an isolate boundary, so it travels as a mode name plus
+  // a thread count, the same way the pipeline-wide config does.
+  final String? landmarkPerformanceModeName;
+  final int? landmarkNumThreads;
 
   const _IsolateStartupData({
     required this.sendPort,
@@ -52,6 +57,8 @@ class _IsolateStartupData {
     required this.interpreterPoolSize,
     required this.performanceModeName,
     this.numThreads,
+    this.landmarkPerformanceModeName,
+    this.landmarkNumThreads,
   });
 }
 
@@ -124,9 +131,46 @@ class DogDetector {
   /// - Android/macOS/Linux/Windows: XNNPACK (2-5x SIMD acceleration)
   final PerformanceConfig performanceConfig;
 
+  /// Optional override of [performanceConfig] for the face landmark stage alone.
+  ///
+  /// Null means the landmark stage uses [performanceConfig] like every other
+  /// stage, which is the previous and still the default behaviour.
+  ///
+  /// This exists because the best delegate genuinely differs per stage, and a
+  /// single pipeline-wide setting cannot express that. Measured on macOS arm64
+  /// (M4 Max) with flutter_litert 3.7.0, XNNPACK versus the Metal GPU delegate:
+  ///
+  /// | stage | XNNPACK | Metal |
+  /// |---|---|---|
+  /// | ssdlite | 4.42 ms | 5.87 ms |
+  /// | species classifier | 1.25 ms | interpreter creation fails |
+  /// | rtmpose_s | 7.82 ms | 10.85 ms, and output deviates by 2.6e-01 |
+  /// | face localizer | 8.65 ms | interpreter creation fails |
+  /// | face landmarks | 26.83 ms | 5.11 ms |
+  ///
+  /// So GPU is a large win for the landmark stage and a loss or a hard failure
+  /// everywhere else. Setting [performanceConfig] to
+  /// [PerformanceMode.gpu] pipeline-wide would throw during [initialize].
+  ///
+  /// The 5.11 ms figure requires a landmark asset whose `TRANSPOSE_CONV` ops
+  /// carry no fused activation, because the GPU delegate supports that op only
+  /// to version 3 and a fused activation forces version 4. The asset bundled
+  /// today does carry one, so it fails GPU interpreter creation and this
+  /// override will not help it yet. It is wired up now so the routing exists
+  /// once a compatible asset ships.
+  ///
+  /// Only macOS has been measured. iOS resolves Metal from a different binary
+  /// and Android uses an entirely different GPU delegate, so verify on device
+  /// before setting this in production.
+  final PerformanceConfig? landmarkPerformanceConfig;
+
   _DogDetectorWorker? _worker;
 
   /// Creates a dog detector with the specified configuration.
+  ///
+  /// [landmarkPerformanceConfig] overrides [performanceConfig] for the face
+  /// landmark stage only. See its documentation for why that stage benefits from
+  /// a different delegate than the rest of the pipeline.
   DogDetector({
     this.mode = DogDetectionMode.full,
     this.poseModel = AnimalPoseModel.rtmpose,
@@ -135,9 +179,12 @@ class DogDetector {
     this.detThreshold = 0.5,
     int interpreterPoolSize = 1,
     this.performanceConfig = const PerformanceConfig(),
-  }) : interpreterPoolSize = performanceConfig.mode == PerformanceMode.disabled
-            ? interpreterPoolSize
-            : 1;
+    this.landmarkPerformanceConfig,
+  }) : interpreterPoolSize =
+            (landmarkPerformanceConfig ?? performanceConfig).mode ==
+                    PerformanceMode.disabled
+                ? interpreterPoolSize
+                : 1;
 
   /// Returns true if the detector has been initialized and is ready to use.
   bool get isReady => _worker?.isReady ?? false;
@@ -259,6 +306,8 @@ class DogDetector {
           interpreterPoolSize: interpreterPoolSize,
           performanceModeName: performanceConfig.mode.name,
           numThreads: performanceConfig.numThreads,
+          landmarkPerformanceModeName: landmarkPerformanceConfig?.mode.name,
+          landmarkNumThreads: landmarkPerformanceConfig?.numThreads,
         ),
       );
     } catch (_) {
@@ -385,6 +434,11 @@ class DogDetector {
       final performanceMode = PerformanceMode.values.firstWhere(
         (m) => m.name == data.performanceModeName,
       );
+      final landmarkMode = data.landmarkPerformanceModeName == null
+          ? null
+          : PerformanceMode.values.firstWhere(
+              (m) => m.name == data.landmarkPerformanceModeName,
+            );
 
       detector = DogDetectorCore(
         mode: mode,
@@ -397,6 +451,12 @@ class DogDetector {
           mode: performanceMode,
           numThreads: data.numThreads,
         ),
+        landmarkPerformanceConfig: landmarkMode == null
+            ? null
+            : PerformanceConfig(
+                mode: landmarkMode,
+                numThreads: data.landmarkNumThreads,
+              ),
       );
 
       await detector.initializeFromBuffers(

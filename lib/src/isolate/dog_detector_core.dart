@@ -63,6 +63,20 @@ class DogDetectorCore {
   /// - Android/macOS/Linux/Windows: XNNPACK (2-5x SIMD acceleration)
   final PerformanceConfig performanceConfig;
 
+  /// Optional override of [performanceConfig] for the landmark stage alone.
+  ///
+  /// The best delegate differs per stage: measured on macOS arm64 with
+  /// flutter_litert 3.7.0, Metal is 5.2x faster than XNNPACK on the landmark
+  /// model (26.83 ms to 5.11 ms) but slower on ssdlite and rtmpose, and fails
+  /// interpreter creation outright on the species classifier and the face
+  /// localizer. A single pipeline-wide mode cannot express that, so the landmark
+  /// stage gets its own optional override. Null keeps the previous behaviour.
+  final PerformanceConfig? landmarkPerformanceConfig;
+
+  /// The config the landmark stage actually runs with.
+  PerformanceConfig get effectiveLandmarkConfig =>
+      landmarkPerformanceConfig ?? performanceConfig;
+
   bool _isInitialized = false;
 
   /// Creates a dog detector with the specified configuration.
@@ -74,9 +88,12 @@ class DogDetectorCore {
     this.detThreshold = 0.5,
     int interpreterPoolSize = 1,
     this.performanceConfig = const PerformanceConfig(),
-  }) : interpreterPoolSize = performanceConfig.mode == PerformanceMode.disabled
-            ? interpreterPoolSize
-            : 1;
+    this.landmarkPerformanceConfig,
+  }) : interpreterPoolSize =
+            (landmarkPerformanceConfig ?? performanceConfig).mode ==
+                    PerformanceMode.disabled
+                ? interpreterPoolSize
+                : 1;
 
   /// Initializes the detector from pre-loaded model bytes.
   ///
@@ -171,7 +188,7 @@ class DogDetectorCore {
       );
       await _lm!.initializeFromBuffer(
         landmarkBytes,
-        performanceConfig,
+        effectiveLandmarkConfig,
         useIsolateInterpreter: useIsolateInterpreter,
       );
     }
