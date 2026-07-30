@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Direct dependency so the GPU delegate benchmark can construct interpreters and
+  # delegates itself, rather than only through DogDetector.
+  flutter_litert: ^3.7.0
   dog_detection:
     path: ../
   image_picker: ^1.2.1
@@ -26,4 +29,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/samples/
+    - assets/gpubench/
     - integration_test/reference_data.json

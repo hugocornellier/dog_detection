@@ -29,3 +29,7 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 /build/
 /coverage/
+
+# Derived model variants for the delegate benchmark. ~11 MB each and regenerable;
+# see example/assets/gpubench/README.md.
+example/assets/gpubench/*.tflite
