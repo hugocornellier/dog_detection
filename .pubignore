@@ -50,3 +50,6 @@ example/web/
 example/integration_test/
 example/test_driver/
 example/test/
+
+# Internal working notes: useful in the repo, not to package consumers.
+PARETO_PUSH_PROMPT.md
