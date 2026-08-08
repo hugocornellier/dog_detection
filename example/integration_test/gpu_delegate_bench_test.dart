@@ -81,7 +81,8 @@ void main() {
       // Pass the ByteBuffer itself, matching animal_detection's convention;
       // handing over a ByteData is rejected by the binding.
       final outputs = {0: output.buffer};
-      void invoke() => interpreter.runForMultipleInputs([input.buffer], outputs);
+      void invoke() =>
+          interpreter.runForMultipleInputs([input.buffer], outputs);
 
       for (var i = 0; i < warmup; i++) {
         invoke();
@@ -106,7 +107,8 @@ void main() {
     final lines = <String>[];
     lines.add('');
     lines.add('=== GPU DELEGATE BENCH (on device) ===');
-    lines.add('variant                    backend        median ms       dev  note');
+    lines.add(
+        'variant                    backend        median ms       dev  note');
 
     for (final entry in variants.entries) {
       final bytes = (await rootBundle.load(entry.value)).buffer.asUint8List();
