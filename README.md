@@ -123,7 +123,7 @@ final detector = DogDetector(
   cropMargin: 0.20,                          // Margin around detected body for crop
   detThreshold: 0.5,                         // SSD detection confidence threshold
   interpreterPoolSize: 1,                    // TFLite interpreter pool size
-  performanceConfig: PerformanceConfig.disabled, // Performance optimization
+  performanceConfig: const PerformanceConfig(), // Auto acceleration
 );
 ```
 
@@ -135,7 +135,7 @@ final detector = DogDetector(
 | `cropMargin` | `double` | `0.20` | Margin around detected body crop (0.0-1.0) |
 | `detThreshold` | `double` | `0.5` | SSD detection confidence threshold |
 | `interpreterPoolSize` | `int` | `1` | TFLite interpreter pool size |
-| `performanceConfig` | `PerformanceConfig` | `disabled` | Hardware acceleration config |
+| `performanceConfig` | `PerformanceConfig` | `auto` | Interpreter hardware acceleration config |
 
 ## Detection Modes
 
@@ -173,21 +173,6 @@ await detector.dispose();
 
 Model bytes are transferred into the isolate with `TransferableTypedData`, so the
 ~70MB of weights in the default configuration move without being copied.
-
-### Migrating from DogDetectorIsolate
-
-`DogDetectorIsolate` is deprecated and will be removed in the next major release.
-It now just delegates to `DogDetector`, so migration is a rename:
-
-| Before | After |
-|--------|-------|
-| `await DogDetectorIsolate.spawn(...)` | `DogDetector(...)` then `await initialize()` |
-| `detector.detectDogs(bytes)` | `detector.detect(bytes)` |
-| `detector.detectDogsFromMat(mat)` | `detector.detectFromMat(mat)` |
-| `detector.dispose()` | `detector.dispose()` (unchanged) |
-
-`onDownloadProgress` moves from `spawn()` to `initialize()`; every other
-configuration argument stays on the `DogDetector` constructor.
 
 ## Performance
 
@@ -229,11 +214,53 @@ final detector = DogDetector(
 );
 await detector.initialize();
 ```
+
+### LiteRT Next CompiledModel
+
+CompiledModel is opt-in and covers the active body, classification, pose,
+face-localizer, and face-landmark stages:
+
+```dart
+// Try GPU first, with verified CPU/stage fallback.
+await detector.initialize(useCompiledModel: true);
+
+// Pin CompiledModel to CPU.
+await detector.initialize(
+  useCompiledModel: true,
+  accelerators: {Accelerator.cpu},
+);
+```
+
+Every requested compiled graph is compared with a plain-CPU Interpreter before
+use. A numerically unsafe GPU graph retries on CompiledModel CPU; if that also
+fails, only that stage uses Interpreter. Interpreter remains the default and
+`Precision.fp32` is used unless explicitly overridden.
+
+## Live Camera Detection
+
+For real-time detection, pass each `camera` package image directly to the
+detector. Packing happens on the caller, while color conversion, rotation,
+downscaling, and inference stay in the detector worker isolate.
+
+```dart
+final dogs = await detector.detectFromCameraImage(
+  cameraImage,
+  rotation: rotation,
+  isBgra: Platform.isMacOS,
+  maxDim: 640,
+);
+```
+
+For lower-level integrations, use `prepareCameraFrame(...)` followed by
+`detectFromCameraFrame(...)`.
+
 ## Credits
 
 Models trained on the [DogFLW dataset](https://github.com/dogflw/dogflw).
 
 ## Example
 
-The [sample code](https://pub.dev/packages/dog_detection/example) from the pub.dev example tab includes a
-Flutter app that paints detections onto an image: bounding boxes and 46-point dog facial landmarks.
+The [sample code](https://pub.dev/packages/dog_detection/example) includes
+matching live-camera, still-image, and video-file demos. All three paint body
+pose and 46-point face landmarks; video output uses temporal smoothing and can
+be replayed in the app.

@@ -56,10 +56,6 @@ library;
 export 'src/types.dart';
 export 'src/dog_detector.dart' show DogDetector;
 
-// Deprecated: DogDetector now owns its background isolate, making this wrapper
-// redundant. Kept for one major release to give consumers time to migrate.
-export 'src/isolate/dog_detector_isolate.dart' show DogDetectorIsolate;
-
 // Re-export everything from animal_detection that consumers need
 export 'package:animal_detection/animal_detection.dart'
     show
@@ -76,6 +72,20 @@ export 'package:animal_detection/animal_detection.dart'
         ModelDownloader,
         PerformanceMode,
         PerformanceConfig,
+        Accelerator,
+        Precision,
+        CameraFrame,
+        CameraFrameConversion,
+        CameraFrameRotation,
+        prepareCameraFrame,
+        prepareCameraFrameFromImage,
+        rotationForFrame,
+        detectionSize,
+        barQuarterTurns,
+        FrameThrottle,
+        FpsCounter,
+        OneEuroFilter,
+        iouLTRB,
         Mat,
         imdecode,
         IMREAD_COLOR;

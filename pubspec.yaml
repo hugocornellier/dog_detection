@@ -1,6 +1,6 @@
 name: dog_detection
 description: "Dog face and landmark detection using on-device LiteRT (formerly TensorFlow Lite) models."
-version: 2.1.0
+version: 3.0.0
 homepage: https://github.com/hugocornellier/dog_detection
 repository: https://github.com/hugocornellier/dog_detection
 
@@ -18,7 +18,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  animal_detection: ^2.1.0
+  animal_detection: ^3.0.0
   opencv_dart: ^2.2.1+4
   flutter_litert: ^3.8.0
   meta: ^1.17.0

@@ -10,7 +10,6 @@
 // - Result consistency / determinism
 // - Configuration parameters (cropMargin, PerformanceConfig)
 // - DogDetector isolate transport (detect, detectFromMat, re-init, concurrency)
-// - DogDetectorIsolate deprecated shim still delegating to DogDetector
 //
 // Run with:
 //   flutter test integration_test/ --dart-define=...
@@ -1054,53 +1053,6 @@ void main() {
         expect(results.length, batch.first.length);
       }
 
-      await detector.dispose();
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // 9b. DogDetectorIsolate (deprecated shim)
-  //
-  // Kept until the class is removed, to prove the delegate still forwards to
-  // DogDetector and produces equivalent results.
-  // ---------------------------------------------------------------------------
-
-  group('DogDetectorIsolate (deprecated)', () {
-    testWidgets('deprecated shim still detects and matches DogDetector',
-        (tester) async {
-      // ignore: deprecated_member_use
-      final isolate = await DogDetectorIsolate.spawn(
-        mode: DogDetectionMode.full,
-      );
-      expect(isolate.isReady, true);
-
-      final detector = DogDetector(mode: DogDetectionMode.full);
-      await detector.initialize();
-
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
-      final Uint8List bytes = data.buffer.asUint8List();
-      final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
-
-      try {
-        // ignore: deprecated_member_use
-        final List<Dog> viaShim = await isolate.detectDogs(bytes);
-        // ignore: deprecated_member_use
-        final List<Dog> viaShimMat = await isolate.detectDogsFromMat(mat);
-        final List<Dog> viaDetector = await detector.detect(bytes);
-
-        expect(viaShim, isNotEmpty);
-        expect(viaShim.length, viaDetector.length);
-        expect(viaShimMat.length, viaDetector.length);
-        expect(viaShim.first.face?.landmarks.length,
-            viaDetector.first.face?.landmarks.length);
-      } finally {
-        mat.dispose();
-      }
-
-      // ignore: deprecated_member_use
-      await isolate.dispose();
-      expect(isolate.isReady, false);
       await detector.dispose();
     });
   });

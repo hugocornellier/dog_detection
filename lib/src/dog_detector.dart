@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
@@ -40,6 +41,9 @@ class _IsolateStartupData {
   // a thread count, the same way the pipeline-wide config does.
   final String? landmarkPerformanceModeName;
   final int? landmarkNumThreads;
+  final bool useCompiledModel;
+  final List<int> acceleratorIndices;
+  final int precisionIndex;
 
   const _IsolateStartupData({
     required this.sendPort,
@@ -59,6 +63,9 @@ class _IsolateStartupData {
     this.numThreads,
     this.landmarkPerformanceModeName,
     this.landmarkNumThreads,
+    required this.useCompiledModel,
+    required this.acceleratorIndices,
+    required this.precisionIndex,
   });
 }
 
@@ -83,7 +90,7 @@ class _IsolateStartupData {
 /// await detector.dispose();
 /// ```
 class DogDetector {
-  static const String _packageVersion = '2.0.0';
+  static const String _packageVersion = '3.0.0';
   static const String _pipelineVersion = 'pipeline_v3';
 
   /// Version key for the default dog detection pipeline.
@@ -166,6 +173,43 @@ class DogDetector {
 
   _DogDetectorWorker? _worker;
 
+  /// Creates and initializes a dog detector in one step.
+  static Future<DogDetector> create({
+    DogDetectionMode mode = DogDetectionMode.full,
+    AnimalPoseModel poseModel = AnimalPoseModel.rtmpose,
+    DogLandmarkModel landmarkModel = DogLandmarkModel.full,
+    double cropMargin = 0.20,
+    double detThreshold = 0.5,
+    int interpreterPoolSize = 1,
+    PerformanceConfig performanceConfig = const PerformanceConfig(),
+    PerformanceConfig? landmarkPerformanceConfig,
+    void Function(String model, int received, int total)? onDownloadProgress,
+    bool useCompiledModel = false,
+    Set<Accelerator> accelerators = const {
+      Accelerator.gpu,
+      Accelerator.cpu,
+    },
+    Precision precision = Precision.fp32,
+  }) async {
+    final detector = DogDetector(
+      mode: mode,
+      poseModel: poseModel,
+      landmarkModel: landmarkModel,
+      cropMargin: cropMargin,
+      detThreshold: detThreshold,
+      interpreterPoolSize: interpreterPoolSize,
+      performanceConfig: performanceConfig,
+      landmarkPerformanceConfig: landmarkPerformanceConfig,
+    );
+    await detector.initialize(
+      onDownloadProgress: onDownloadProgress,
+      useCompiledModel: useCompiledModel,
+      accelerators: accelerators,
+      precision: precision,
+    );
+    return detector;
+  }
+
   /// Creates a dog detector with the specified configuration.
   ///
   /// [landmarkPerformanceConfig] overrides [performanceConfig] for the face
@@ -177,14 +221,10 @@ class DogDetector {
     this.landmarkModel = DogLandmarkModel.full,
     this.cropMargin = 0.20,
     this.detThreshold = 0.5,
-    int interpreterPoolSize = 1,
+    this.interpreterPoolSize = 1,
     this.performanceConfig = const PerformanceConfig(),
     this.landmarkPerformanceConfig,
-  }) : interpreterPoolSize =
-            (landmarkPerformanceConfig ?? performanceConfig).mode ==
-                    PerformanceMode.disabled
-                ? interpreterPoolSize
-                : 1;
+  });
 
   /// Returns true if the detector has been initialized and is ready to use.
   bool get isReady => _worker?.isReady ?? false;
@@ -206,8 +246,20 @@ class DogDetector {
   ///
   /// [onDownloadProgress] is called during any model download with
   /// (modelName, bytesReceived, totalBytes).
+  ///
+  /// [useCompiledModel] opts every active stage into LiteRT Next CompiledModel.
+  /// It defaults off. [accelerators] defaults to GPU with CPU fallback and
+  /// [precision] defaults to fp32. Every compiled graph is numerically checked;
+  /// an unsafe graph falls back stage-by-stage rather than returning corrupted
+  /// detections.
   Future<void> initialize({
     void Function(String model, int received, int total)? onDownloadProgress,
+    bool useCompiledModel = false,
+    Set<Accelerator> accelerators = const {
+      Accelerator.gpu,
+      Accelerator.cpu,
+    },
+    Precision precision = Precision.fp32,
   }) async {
     if (_worker != null) {
       await dispose();
@@ -287,6 +339,12 @@ class DogDetector {
       }
     }
 
+    final effectivePoolSize = (useCompiledModel ||
+            (landmarkPerformanceConfig ?? performanceConfig).mode ==
+                PerformanceMode.disabled)
+        ? interpreterPoolSize
+        : 1;
+
     final worker = _DogDetectorWorker();
     try {
       await worker.initialize(
@@ -303,11 +361,14 @@ class DogDetector {
           landmarkModelName: landmarkModel.name,
           cropMargin: cropMargin,
           detThreshold: detThreshold,
-          interpreterPoolSize: interpreterPoolSize,
+          interpreterPoolSize: effectivePoolSize,
           performanceModeName: performanceConfig.mode.name,
           numThreads: performanceConfig.numThreads,
           landmarkPerformanceModeName: landmarkPerformanceConfig?.mode.name,
           landmarkNumThreads: landmarkPerformanceConfig?.numThreads,
+          useCompiledModel: useCompiledModel,
+          acceleratorIndices: accelerators.map((a) => a.index).toList(),
+          precisionIndex: precision.index,
         ),
       );
     } catch (_) {
@@ -358,6 +419,36 @@ class DogDetector {
       },
     );
     return _deserializeDogs(result);
+  }
+
+  /// Detects dogs directly from a camera frame prepared by flutter_litert.
+  Future<List<Dog>> detectFromCameraFrame(
+    CameraFrame frame, {
+    int? maxDim,
+  }) async {
+    final result = await _requireWorker().sendRequest<List<dynamic>>(
+      'detectCameraFrame',
+      cameraFrameRpcFields(frame, {'maxDim': maxDim}),
+    );
+    return _deserializeDogs(result);
+  }
+
+  /// Convenience wrapper accepting a package:camera `CameraImage`-shaped
+  /// object without taking a hard dependency on package:camera.
+  Future<List<Dog>> detectFromCameraImage(
+    Object cameraImage, {
+    CameraFrameRotation? rotation,
+    bool? isBgra,
+    int? maxDim,
+  }) async {
+    _requireWorker();
+    final frame = prepareCameraFrameFromImage(
+      cameraImage,
+      rotation: rotation,
+      isBgra: isBgra ?? Platform.isMacOS,
+    );
+    if (frame == null) return const <Dog>[];
+    return detectFromCameraFrame(frame, maxDim: maxDim);
   }
 
   /// Releases the background isolate and all native model resources.
@@ -467,6 +558,11 @@ class DogDetector {
         speciesMappingJson: data.speciesMappingJson,
         poseModelBytes: poseModelBytes,
         useIsolateInterpreter: false,
+        useCompiledModel: data.useCompiledModel,
+        accelerators: data.acceleratorIndices
+            .map((index) => Accelerator.values[index])
+            .toSet(),
+        precision: Precision.values[data.precisionIndex],
       );
 
       mainSendPort.send(workerReceivePort.sendPort);
@@ -530,6 +626,36 @@ class DogDetector {
               mainSendPort.send({
                 'id': id,
                 'result': dogs.map((c) => c.toMap()).toList(),
+              });
+            } finally {
+              mat.dispose();
+            }
+
+          case 'detectCameraFrame':
+            if (detector == null || !detector!.isInitialized) {
+              mainSendPort.send({
+                'id': id,
+                'error': 'DogDetector not initialized in isolate',
+              });
+              return;
+            }
+            final bytes = (message['bytes'] as TransferableTypedData)
+                .materialize()
+                .asUint8List();
+            final frame = cameraFrameFromRpcMessage(message, bytes);
+            final mat = ImageUtils.cameraFrameToBgrMat(
+              frame,
+              maxDim: message['maxDim'] as int?,
+            );
+            try {
+              final dogs = await detector!.detectFromMat(
+                mat,
+                imageWidth: mat.cols,
+                imageHeight: mat.rows,
+              );
+              mainSendPort.send({
+                'id': id,
+                'result': dogs.map((dog) => dog.toMap()).toList(),
               });
             } finally {
               mat.dispose();

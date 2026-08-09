@@ -1,6 +1,7 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:opencv_dart/opencv_dart.dart' as cv;
 import 'package:animal_detection/animal_detection.dart';
+import 'package:animal_detection/animal_detection_core.dart';
 import '../types.dart';
 
 /// On-device dog detection using a unified multi-stage TensorFlow Lite pipeline.
@@ -11,7 +12,7 @@ import '../types.dart';
 /// - [DogDetectionMode.poseOnly]: Body detection + species + body pose only.
 /// - [DogDetectionMode.faceOnly]: Face localizer + face landmarks only (legacy).
 ///
-/// Uses [AnimalDetector] from the animal_detection package for body detection,
+/// Uses [AnimalDetectorCore] from animal_detection for body detection,
 /// species classification, and pose estimation. Dog-specific face detection
 /// and landmark extraction are handled directly.
 ///
@@ -32,7 +33,7 @@ class DogDetectorCore {
   static const int _localizerInputSize = 224;
 
   // Animal detection pipeline (full / poseOnly)
-  AnimalDetector? _animalDetector;
+  AnimalDetectorCore? _animalDetector;
 
   // Face pipeline (full / faceOnly)
   FaceLocalizerModel? _localizer;
@@ -86,14 +87,10 @@ class DogDetectorCore {
     this.landmarkModel = DogLandmarkModel.full,
     this.cropMargin = 0.20,
     this.detThreshold = 0.5,
-    int interpreterPoolSize = 1,
+    this.interpreterPoolSize = 1,
     this.performanceConfig = const PerformanceConfig(),
     this.landmarkPerformanceConfig,
-  }) : interpreterPoolSize =
-            (landmarkPerformanceConfig ?? performanceConfig).mode ==
-                    PerformanceMode.disabled
-                ? interpreterPoolSize
-                : 1;
+  });
 
   /// Initializes the detector from pre-loaded model bytes.
   ///
@@ -108,6 +105,12 @@ class DogDetectorCore {
     String? speciesMappingJson,
     Uint8List? poseModelBytes,
     bool useIsolateInterpreter = true,
+    bool useCompiledModel = false,
+    Set<Accelerator> accelerators = const {
+      Accelerator.gpu,
+      Accelerator.cpu,
+    },
+    Precision precision = Precision.fp32,
   }) async {
     if (_isInitialized) {
       await dispose();
@@ -140,7 +143,7 @@ class DogDetectorCore {
         );
       }
 
-      _animalDetector = AnimalDetector(
+      _animalDetector = AnimalDetectorCore(
         poseModel: poseModel,
         enablePose: true,
         cropMargin: cropMargin,
@@ -153,6 +156,9 @@ class DogDetectorCore {
         speciesMappingJson: speciesMappingJson,
         poseModelBytes: poseModelBytes,
         useIsolateInterpreter: useIsolateInterpreter,
+        useCompiledModel: useCompiledModel,
+        accelerators: accelerators,
+        precision: precision,
       );
     }
 
@@ -173,11 +179,37 @@ class DogDetectorCore {
         modelPath:
             'packages/dog_detection/assets/models/dog_face_localizer.tflite',
       );
-      await _localizer!.initializeFromBuffer(
-        localizerBytes,
-        performanceConfig,
-        useIsolateInterpreter: useIsolateInterpreter,
-      );
+      if (useCompiledModel) {
+        try {
+          await _localizer!.initCompiledFromBuffer(
+            localizerBytes,
+            accelerators: accelerators,
+            precision: precision,
+          );
+        } catch (error) {
+          debugPrint(
+            'Dog face localizer CompiledModel rejected; using Interpreter: '
+            '$error',
+          );
+          _localizer!.dispose();
+          _localizer = FaceLocalizerModel(
+            inputSize: _localizerInputSize,
+            modelPath:
+                'packages/dog_detection/assets/models/dog_face_localizer.tflite',
+          );
+          await _localizer!.initializeFromBuffer(
+            localizerBytes,
+            performanceConfig,
+            useIsolateInterpreter: useIsolateInterpreter,
+          );
+        }
+      } else {
+        await _localizer!.initializeFromBuffer(
+          localizerBytes,
+          performanceConfig,
+          useIsolateInterpreter: useIsolateInterpreter,
+        );
+      }
 
       _lm = LandmarkModelRunnerBase(
         inputSize: _landmarkInputSize,
@@ -186,11 +218,39 @@ class DogDetectorCore {
             'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',
         poolSize: interpreterPoolSize,
       );
-      await _lm!.initializeFromBuffer(
-        landmarkBytes,
-        effectiveLandmarkConfig,
-        useIsolateInterpreter: useIsolateInterpreter,
-      );
+      if (useCompiledModel) {
+        try {
+          await _lm!.initializeCompiledFromBuffer(
+            landmarkBytes,
+            accelerators: accelerators,
+            precision: precision,
+          );
+        } catch (error) {
+          debugPrint(
+            'Dog face landmarks CompiledModel rejected; using Interpreter: '
+            '$error',
+          );
+          _lm!.dispose();
+          _lm = LandmarkModelRunnerBase(
+            inputSize: _landmarkInputSize,
+            numLandmarks: numDogLandmarks,
+            modelPath:
+                'packages/dog_detection/assets/models/dog_face_landmarks_full.tflite',
+            poolSize: interpreterPoolSize,
+          );
+          await _lm!.initializeFromBuffer(
+            landmarkBytes,
+            effectiveLandmarkConfig,
+            useIsolateInterpreter: useIsolateInterpreter,
+          );
+        }
+      } else {
+        await _lm!.initializeFromBuffer(
+          landmarkBytes,
+          effectiveLandmarkConfig,
+          useIsolateInterpreter: useIsolateInterpreter,
+        );
+      }
     }
 
     _isInitialized = true;
