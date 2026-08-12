@@ -75,8 +75,17 @@ class DogDetectorCore {
   final PerformanceConfig? landmarkPerformanceConfig;
 
   /// The config the landmark stage actually runs with.
+  ///
+  /// The landmark graph is exported with static shapes and an unfused deconv
+  /// ReLU so every GPU backend can claim it. XNNPACK also claims the deconv
+  /// region, but with a kernel slower than TFLite's built-in ruy one, so on
+  /// this graph XNNPACK is 2x slower than bare CPU and 16x slower than GPU
+  /// (macOS M4 Max, 57.7ms / 32.2ms / 3.5ms). Auto mode resolves to XNNPACK
+  /// everywhere except iOS, so the landmark stage defaults to GPU instead.
+  /// On platforms without a GPU delegate this falls through to bare CPU,
+  /// which is the correct second choice for this graph.
   PerformanceConfig get effectiveLandmarkConfig =>
-      landmarkPerformanceConfig ?? performanceConfig;
+      landmarkPerformanceConfig ?? const PerformanceConfig.gpu();
 
   bool _isInitialized = false;
 
@@ -105,7 +114,7 @@ class DogDetectorCore {
     String? speciesMappingJson,
     Uint8List? poseModelBytes,
     bool useIsolateInterpreter = true,
-    bool useCompiledModel = false,
+    bool useCompiledModel = true,
     Set<Accelerator> accelerators = const {
       Accelerator.gpu,
       Accelerator.cpu,

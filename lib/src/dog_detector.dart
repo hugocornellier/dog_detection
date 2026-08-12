@@ -184,7 +184,7 @@ class DogDetector {
     PerformanceConfig performanceConfig = const PerformanceConfig(),
     PerformanceConfig? landmarkPerformanceConfig,
     void Function(String model, int received, int total)? onDownloadProgress,
-    bool useCompiledModel = false,
+    bool useCompiledModel = true,
     Set<Accelerator> accelerators = const {
       Accelerator.gpu,
       Accelerator.cpu,
@@ -254,7 +254,7 @@ class DogDetector {
   /// detections.
   Future<void> initialize({
     void Function(String model, int received, int total)? onDownloadProgress,
-    bool useCompiledModel = false,
+    bool useCompiledModel = true,
     Set<Accelerator> accelerators = const {
       Accelerator.gpu,
       Accelerator.cpu,
