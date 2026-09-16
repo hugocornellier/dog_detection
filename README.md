@@ -256,7 +256,35 @@ For lower-level integrations, use `prepareCameraFrame(...)` followed by
 
 ## Credits
 
-Models trained on the [DogFLW dataset](https://github.com/dogflw/dogflw).
+Models trained on the [DogFLW dataset](https://github.com/martvelge/DogFLW) by
+Martvel et al., Tech4Animals Lab, University of Haifa.
+
+DogFLW is licensed
+[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). Obtain the
+dataset from
+[Kaggle](https://www.kaggle.com/datasets/georgemartvel/dogflw) under its own
+terms.
+
+The five `sample_dog_*.png` files in `example/assets/samples/` are DogFLW
+images with the dataset's ground-truth landmarks rendered on them. They remain
+licensed CC BY-NC 4.0 and are **not** covered by this repository's Apache 2.0
+license; see
+[`example/assets/samples/README.md`](example/assets/samples/README.md). They
+are excluded from the published pub.dev archive.
+
+```bibtex
+@article{martvel2025dog,
+  title={Dog facial landmarks detection and its applications for facial analysis},
+  author={Martvel, George and Zamansky, Anna and Pedretti, Giulia and Canori,
+          Chiara and Shimshoni, Ilan and Bremhorst, Annika},
+  journal={Scientific Reports},
+  volume={15},
+  number={1},
+  pages={21886},
+  year={2025},
+  publisher={Nature Publishing Group UK London}
+}
+```
 
 ## Example
 
