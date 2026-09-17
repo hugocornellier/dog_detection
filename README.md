@@ -34,7 +34,8 @@ await detector.initialize();
 final dogs = await detector.detect(imageBytes);
 for (final dog in dogs) {
   print('${dog.species} at ${dog.boundingBox}');
-  print('Breed: ${dog.breed} (${(dog.speciesConfidence! * 100).toStringAsFixed(0)}%)');
+  // breed is null when the classifier landed on a near-miss class
+  if (dog.breed != null) print('Breed: ${dog.breed}');
   print('Pose keypoints: ${dog.pose?.landmarks.length}');
   print('Face landmarks: ${dog.face?.landmarks.length}');
 }
@@ -69,9 +70,43 @@ for (final landmark in face.landmarks) {
 }
 ```
 
+## Species Filtering
+
+Only dogs are returned. In `full` and `poseOnly` modes the species classifier's
+label is checked before a result is emitted, and any animal identified as
+something else is dropped. A `Dog` that is not a dog would break the guarantee
+its own type makes, so an image containing other animals yields only the dogs.
+
+If you want every animal regardless of species, use
+[animal_detection](https://pub.dev/packages/animal_detection) directly. It is
+already a dependency of this package.
+
+`minSpeciesConfidence` adds an optional second filter on classifier confidence:
+
+```dart
+final detector = DogDetector(minSpeciesConfidence: 0.35);
+```
+
+It defaults to `0.0`, meaning off, and is worth raising if you see confident
+misidentifications. People are the common case, because the underlying
+1000-class ImageNet classifier has no person category and must assign every crop
+to some animal or object class. Note the value is not comparable with the
+sibling package's: it is one class's softmax probability, and probability mass
+splits across however many classes a species occupies.
+
+`faceOnly` mode is unaffected. It runs no classifier, so there is no species to
+check, and the caller has already asserted the subject.
+
 ## Breed Identification
 
-In `full` and `poseOnly` modes, each detected dog includes a predicted breed label and confidence score from the species classifier.
+In `full` and `poseOnly` modes, each detected dog may include a predicted breed
+label and confidence score from the species classifier.
+
+`breed` is null when no breed is known: in `faceOnly` mode, which runs no
+classifier, or when the classifier's top class fell in the near-miss block
+(wolf, coyote, dingo or dhole). Those are still returned as dogs, since the likeliest explanation is a
+domestic dog placed on a neighbouring class, but the label is withheld rather
+than naming an animal the subject probably is not. Always null-check it.
 
 ```dart
 final dogs = await detector.detect(imageBytes);
@@ -285,6 +320,38 @@ are excluded from the published pub.dev archive.
   publisher={Nature Publishing Group UK London}
 }
 ```
+
+## Weights and training code
+
+The models in this package are published separately, with the full training
+pipeline that produced them:
+
+- **Weights:** [huggingface.co/hugocornellier/dog-face-landmarks](https://huggingface.co/hugocornellier/dog-face-landmarks)
+  also carries a higher-accuracy variant (8.77 NME_IOD against 8.56 for the
+  bundled one) that is too slow for phones but better suited to server-side use.
+- **Training code and experiment journal:**
+  [github.com/hugocornellier/dog-face-landmarks-training](https://github.com/hugocornellier/dog-face-landmarks-training)
+
+## License
+
+The Dart source code is **Apache 2.0**; see [`LICENSE`](LICENSE).
+
+**The bundled model files are an exception.**
+`assets/models/dog_face_landmarks_full.tflite` and
+`assets/models/dog_face_localizer.tflite` are licensed
+[**CC BY-NC 4.0**](https://creativecommons.org/licenses/by-nc/4.0/),
+**non-commercial use only**. See [`NOTICE`](NOTICE).
+
+This means using this package in a commercial product is not something this
+license permits, because doing so runs those weights. The Dart code stays
+Apache 2.0 and can be used commercially with weights you supply yourself.
+
+The reason is that the weights are trained on DogFLW, which is CC BY-NC 4.0. Its
+authors were asked directly how they wanted derived weights licensed, asked for
+CC BY-NC 4.0 to stay consistent with the dataset, and granted permission to
+publish on that basis. Commercial permission is not this package author's alone
+to give: for that, contact the dataset authors at the Tech4Animals Lab,
+University of Haifa.
 
 ## Example
 

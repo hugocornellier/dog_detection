@@ -996,9 +996,16 @@ class DogOverlayPainter extends CustomPainter {
     final double x1 = dog.boundingBox.left * scaleX + offsetX;
     final double y1 = dog.boundingBox.top * scaleY + offsetY;
 
-    final String breedInfo = dog.breed != null && dog.speciesConfidence != null
-        ? ' (${dog.breed}, ${(dog.speciesConfidence! * 100).toStringAsFixed(0)}%)'
-        : '';
+    // breed is null when the classifier landed on a near-miss class, so show
+    // the confidence on its own rather than dropping it along with the label.
+    final String? confidence = dog.speciesConfidence == null
+        ? null
+        : '${(dog.speciesConfidence! * 100).toStringAsFixed(0)}%';
+    final List<String> parts = [
+      if (dog.breed != null) dog.breed!,
+      if (confidence != null) confidence,
+    ];
+    final String breedInfo = parts.isEmpty ? '' : ' (${parts.join(', ')})';
     final String label = '${dog.species}$breedInfo';
     final TextPainter textPainter = TextPainter(
       text: TextSpan(

@@ -48,3 +48,5 @@ flutter:
     - assets/samples/
     - assets/gpubench/
     - integration_test/reference_data.json
+    - integration_test/test_images/
+    - integration_test/test_images/dachshund/

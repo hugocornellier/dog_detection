@@ -401,10 +401,22 @@ class Dog {
   /// SSD detector confidence score (0.0 to 1.0)
   final double score;
 
-  /// Predicted species label (e.g. "dog"), or null if classification was not run
+  /// Predicted species label, or null if classification was not run.
+  ///
+  /// Always `'dog'` when non-null. Detections the species classifier assigns
+  /// to any other animal are dropped rather than returned, so a [Dog] always
+  /// describes a dog. Use `animal_detection` directly if you need every
+  /// animal regardless of species.
   final String? species;
 
-  /// Predicted breed label, or null if classification was not run
+  /// Predicted breed label, or null when no breed is known.
+  ///
+  /// Null in three cases: classification was not run (`faceOnly` mode), the
+  /// classifier is unavailable, or the top class fell in the near-miss block
+  /// (wolf, coyote, dingo or dhole). In that last case the animal is still returned as a
+  /// dog, because the likeliest explanation is a domestic dog the
+  /// classifier placed on a neighbouring class, but naming that class as the
+  /// breed would assert an animal this probably is not.
   final String? breed;
 
   /// Species classifier confidence (0.0 to 1.0), or null if not run

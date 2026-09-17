@@ -87,6 +87,26 @@ class DogDetectorCore {
   PerformanceConfig get effectiveLandmarkConfig =>
       landmarkPerformanceConfig ?? const PerformanceConfig.gpu();
 
+  /// Minimum species-classifier confidence a detection must reach to be
+  /// returned. `0.0` disables the check, which is the default.
+  ///
+  /// Left off by default because the value is not comparable between the
+  /// sibling packages. The classifier is a 1000-class ImageNet model and this
+  /// is the softmax probability of a single class, so probability mass splits
+  /// across however many classes the species occupies: 7 for dogs but 125 for
+  /// the sibling dog package. A threshold tuned on one would reject genuine
+  /// detections in the other. Tune it against your own imagery.
+  final double minSpeciesConfidence;
+
+  /// Whether [species] names an animal this package is meant to return.
+  ///
+  /// True for the domestic 'dog' block and for the near-miss 'wild_canid'
+  /// block (wolf, coyote, dingo and dhole), whose members are most often a
+  /// domestic dog the classifier placed on a neighbouring class. Everything
+  /// else, including `unknown_animal`, is rejected.
+  static bool _isTargetSpecies(String? species) =>
+      species == 'dog' || species == 'wild_canid';
+
   bool _isInitialized = false;
 
   /// Creates a dog detector with the specified configuration.
@@ -99,6 +119,7 @@ class DogDetectorCore {
     this.interpreterPoolSize = 1,
     this.performanceConfig = const PerformanceConfig(),
     this.landmarkPerformanceConfig,
+    this.minSpeciesConfidence = 0.0,
   });
 
   /// Initializes the detector from pre-loaded model bytes.
@@ -364,6 +385,21 @@ class DogDetectorCore {
 
     for (int i = 0; i < animals.length; i++) {
       final animal = animals[i];
+
+      // Species gate. The package ships a mapping in which only the 'dog'
+      // block and the near-miss 'wild_canid' block resolve to a species; every
+      // other ImageNet class becomes 'unknown_animal'. Anything that is not a
+      // dog is dropped rather than returned with a null face, because a
+      // `Dog` that is not a dog would break the guarantee its own type
+      // makes. Callers who want every animal regardless of species should use
+      // animal_detection directly.
+      if (!_isTargetSpecies(animal.species)) continue;
+      if (minSpeciesConfidence > 0.0 &&
+          animal.speciesConfidence != null &&
+          animal.speciesConfidence! < minSpeciesConfidence) {
+        continue;
+      }
+
       DogFace? face;
 
       // Stage 4: face detection (full mode only)
@@ -414,7 +450,10 @@ class DogDetectorCore {
         boundingBox: animal.boundingBox,
         score: animal.score,
         species: animal.species,
-        breed: animal.breed,
+        // Null for the near-miss block: the most likely explanation is a
+        // domestic dog the classifier placed on a neighbouring class, so
+        // the label would name an animal this is probably not.
+        breed: animal.species == 'dog' ? animal.breed : null,
         speciesConfidence: animal.speciesConfidence,
         face: face,
         pose: animal.pose,
