@@ -54,8 +54,9 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('should report isInitialized as true after init',
-        (tester) async {
+    testWidgets('should report isInitialized as true after init', (
+      tester,
+    ) async {
       final detector = DogDetector();
       expect(detector.isInitialized, false);
       await detector.initialize();
@@ -63,50 +64,58 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('should report isInitialized as false before init',
-        (tester) async {
+    testWidgets('should report isInitialized as false before init', (
+      tester,
+    ) async {
       final detector = DogDetector();
       expect(detector.isInitialized, false);
       // No dispose needed, detector was never initialized.
     });
 
-    testWidgets('should throw StateError when detect called before init',
-        (tester) async {
+    testWidgets('should throw StateError when detect called before init', (
+      tester,
+    ) async {
       final detector = DogDetector();
       final bytes = _TestUtils.createTinyBlackPng();
 
       expect(
         () => detector.detect(bytes),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('not initialized'),
-        )),
-      );
-    });
-
-    testWidgets('should throw StateError when detectFromMat called before init',
-        (tester) async {
-      final detector = DogDetector();
-      final mat = cv.Mat.zeros(100, 100, cv.MatType.CV_8UC3);
-
-      try {
-        expect(
-          () => detector.detectFromMat(
-            mat,
-            imageWidth: mat.cols,
-            imageHeight: mat.rows,
-          ),
-          throwsA(isA<StateError>().having(
+        throwsA(
+          isA<StateError>().having(
             (e) => e.message,
             'message',
             contains('not initialized'),
-          )),
-        );
-      } finally {
-        mat.dispose();
-      }
+          ),
+        ),
+      );
     });
+
+    testWidgets(
+      'should throw StateError when detectFromMat called before init',
+      (tester) async {
+        final detector = DogDetector();
+        final mat = cv.Mat.zeros(100, 100, cv.MatType.CV_8UC3);
+
+        try {
+          expect(
+            () => detector.detectFromMat(
+              mat,
+              imageWidth: mat.cols,
+              imageHeight: mat.rows,
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('not initialized'),
+              ),
+            ),
+          );
+        } finally {
+          mat.dispose();
+        }
+      },
+    );
 
     testWidgets('should allow re-initialization', (tester) async {
       final detector = DogDetector();
@@ -140,8 +149,9 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
       expect(mat.isEmpty, isFalse);
@@ -164,8 +174,9 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -189,13 +200,15 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('should have correct imageWidth and imageHeight',
-        (tester) async {
+    testWidgets('should have correct imageWidth and imageHeight', (
+      tester,
+    ) async {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -218,13 +231,12 @@ void main() {
     });
 
     testWidgets('should detect landmarks when mode is full', (tester) async {
-      final detector = DogDetector(
-        mode: DogDetectionMode.full,
-      );
+      final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -244,13 +256,12 @@ void main() {
     });
 
     testWidgets('should return 46 landmarks', (tester) async {
-      final detector = DogDetector(
-        mode: DogDetectionMode.full,
-      );
+      final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -270,13 +281,12 @@ void main() {
     });
 
     testWidgets('should have all landmark types present', (tester) async {
-      final detector = DogDetector(
-        mode: DogDetectionMode.full,
-      );
+      final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -311,15 +321,18 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
 
       final List<Dog> results = await detector.detect(bytes);
 
       expect(results, isNotEmpty);
-      expect(results.first.boundingBox.right,
-          greaterThan(results.first.boundingBox.left));
+      expect(
+        results.first.boundingBox.right,
+        greaterThan(results.first.boundingBox.left),
+      );
       expect(results.first.imageWidth, greaterThan(0));
       expect(results.first.imageHeight, greaterThan(0));
 
@@ -330,8 +343,9 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_2.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_2.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
 
       final List<Dog> results = await detector.detect(bytes);
@@ -341,13 +355,15 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('should produce matching results to detectFromMat',
-        (tester) async {
+    testWidgets('should produce matching results to detectFromMat', (
+      tester,
+    ) async {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
       expect(mat.isEmpty, isFalse);
@@ -363,8 +379,10 @@ void main() {
         expect(fromBytes.length, fromMat.length);
 
         for (int i = 0; i < fromBytes.length; i++) {
-          expect(fromBytes[i].face?.landmarks.length,
-              fromMat[i].face?.landmarks.length);
+          expect(
+            fromBytes[i].face?.landmarks.length,
+            fromMat[i].face?.landmarks.length,
+          );
         }
       } finally {
         mat.dispose();
@@ -391,13 +409,15 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('DogDetector - Boxes Only Mode', () {
-    testWidgets('should return dog with no face in poseOnly mode',
-        (tester) async {
+    testWidgets('should return dog with no face in poseOnly mode', (
+      tester,
+    ) async {
       final detector = DogDetector(mode: DogDetectionMode.poseOnly);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -421,13 +441,15 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('should still have valid bounding box in poseOnly mode',
-        (tester) async {
+    testWidgets('should still have valid bounding box in poseOnly mode', (
+      tester,
+    ) async {
       final detector = DogDetector(mode: DogDetectionMode.poseOnly);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -457,8 +479,9 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('DogDetector - Error Recovery', () {
-    testWidgets('should recover after empty-result input (1x1 black image)',
-        (tester) async {
+    testWidgets('should recover after empty-result input (1x1 black image)', (
+      tester,
+    ) async {
       final detector = DogDetector();
       await detector.initialize();
 
@@ -473,8 +496,9 @@ void main() {
       expect(emptyResults, isNotNull);
 
       // Should work normally after a no-detection run.
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
       try {
@@ -497,13 +521,15 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('DogDetector - Result Consistency', () {
-    testWidgets('should produce deterministic results (same image twice)',
-        (tester) async {
+    testWidgets('should produce deterministic results (same image twice)', (
+      tester,
+    ) async {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat1 = cv.imdecode(bytes, cv.IMREAD_COLOR);
       final mat2 = cv.imdecode(bytes, cv.IMREAD_COLOR);
@@ -523,8 +549,10 @@ void main() {
         expect(first.length, second.length);
 
         for (int i = 0; i < first.length; i++) {
-          expect(first[i].face?.landmarks.length,
-              second[i].face?.landmarks.length);
+          expect(
+            first[i].face?.landmarks.length,
+            second[i].face?.landmarks.length,
+          );
 
           final firstLandmarks = first[i].face?.landmarks ?? [];
           final secondLandmarks = second[i].face?.landmarks ?? [];
@@ -562,18 +590,25 @@ void main() {
       await detectorTight.initialize();
       await detectorWide.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
 
       // Both detectors should detect successfully with different margins.
       final tightResults = await detectorTight.detect(bytes);
       final wideResults = await detectorWide.detect(bytes);
 
-      expect(tightResults, isNotEmpty,
-          reason: 'Tight margin detector returned no results');
-      expect(wideResults, isNotEmpty,
-          reason: 'Wide margin detector returned no results');
+      expect(
+        tightResults,
+        isNotEmpty,
+        reason: 'Tight margin detector returned no results',
+      );
+      expect(
+        wideResults,
+        isNotEmpty,
+        reason: 'Wide margin detector returned no results',
+      );
 
       // Both should produce 46 landmarks.
       expect(tightResults.first.face!.landmarks.length, numDogLandmarks);
@@ -589,8 +624,9 @@ void main() {
       );
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
@@ -599,8 +635,9 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('should expose configured mode and landmarkModel',
-        (tester) async {
+    testWidgets('should expose configured mode and landmarkModel', (
+      tester,
+    ) async {
       final detector = DogDetector(
         mode: DogDetectionMode.poseOnly,
         landmarkModel: DogLandmarkModel.full,
@@ -621,15 +658,15 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('DogDetector - Landmark Validation', () {
-    testWidgets('all landmarks should have finite x,y coordinates',
-        (tester) async {
-      final detector = DogDetector(
-        mode: DogDetectionMode.full,
-      );
+    testWidgets('all landmarks should have finite x,y coordinates', (
+      tester,
+    ) async {
+      final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
@@ -637,10 +674,16 @@ void main() {
 
       for (final dog in results) {
         for (final landmark in dog.face?.landmarks ?? []) {
-          expect(landmark.x.isFinite, true,
-              reason: 'x is not finite for ${landmark.type}');
-          expect(landmark.y.isFinite, true,
-              reason: 'y is not finite for ${landmark.type}');
+          expect(
+            landmark.x.isFinite,
+            true,
+            reason: 'x is not finite for ${landmark.type}',
+          );
+          expect(
+            landmark.y.isFinite,
+            true,
+            reason: 'y is not finite for ${landmark.type}',
+          );
         }
       }
 
@@ -648,13 +691,12 @@ void main() {
     });
 
     testWidgets('landmarks should be within image bounds', (tester) async {
-      final detector = DogDetector(
-        mode: DogDetectionMode.full,
-      );
+      final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -668,14 +710,26 @@ void main() {
 
         final dog = results.first;
         for (final landmark in dog.face?.landmarks ?? []) {
-          expect(landmark.x, greaterThanOrEqualTo(0),
-              reason: '${landmark.type}.x is negative');
-          expect(landmark.x, lessThanOrEqualTo(dog.imageWidth.toDouble()),
-              reason: '${landmark.type}.x exceeds imageWidth');
-          expect(landmark.y, greaterThanOrEqualTo(0),
-              reason: '${landmark.type}.y is negative');
-          expect(landmark.y, lessThanOrEqualTo(dog.imageHeight.toDouble()),
-              reason: '${landmark.type}.y exceeds imageHeight');
+          expect(
+            landmark.x,
+            greaterThanOrEqualTo(0),
+            reason: '${landmark.type}.x is negative',
+          );
+          expect(
+            landmark.x,
+            lessThanOrEqualTo(dog.imageWidth.toDouble()),
+            reason: '${landmark.type}.x exceeds imageWidth',
+          );
+          expect(
+            landmark.y,
+            greaterThanOrEqualTo(0),
+            reason: '${landmark.type}.y is negative',
+          );
+          expect(
+            landmark.y,
+            lessThanOrEqualTo(dog.imageHeight.toDouble()),
+            reason: '${landmark.type}.y exceeds imageHeight',
+          );
         }
       } finally {
         mat.dispose();
@@ -684,11 +738,10 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('should handle different sample images (orientations)',
-        (tester) async {
-      final detector = DogDetector(
-        mode: DogDetectionMode.full,
-      );
+    testWidgets('should handle different sample images (orientations)', (
+      tester,
+    ) async {
+      final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
       final samplePaths = [
@@ -716,10 +769,16 @@ void main() {
             expect(dog.imageWidth, mat.cols);
             expect(dog.imageHeight, mat.rows);
             for (final landmark in dog.face?.landmarks ?? []) {
-              expect(landmark.x.isFinite, true,
-                  reason: 'x not finite for ${landmark.type} in $path');
-              expect(landmark.y.isFinite, true,
-                  reason: 'y not finite for ${landmark.type} in $path');
+              expect(
+                landmark.x.isFinite,
+                true,
+                reason: 'x not finite for ${landmark.type} in $path',
+              );
+              expect(
+                landmark.y.isFinite,
+                true,
+                reason: 'y not finite for ${landmark.type} in $path',
+              );
             }
           }
         } finally {
@@ -730,15 +789,15 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('normalized coordinates should be in 0.0-1.0 range',
-        (tester) async {
-      final detector = DogDetector(
-        mode: DogDetectionMode.full,
-      );
+    testWidgets('normalized coordinates should be in 0.0-1.0 range', (
+      tester,
+    ) async {
+      final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
@@ -758,13 +817,12 @@ void main() {
     });
 
     testWidgets('toPixel() should match truncated x,y', (tester) async {
-      final detector = DogDetector(
-        mode: DogDetectionMode.full,
-      );
+      final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
@@ -786,13 +844,15 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('DogDetector - faceOnly mode', () {
-    testWidgets('returns face landmarks without the body stages',
-        (tester) async {
+    testWidgets('returns face landmarks without the body stages', (
+      tester,
+    ) async {
       final detector = DogDetector(mode: DogDetectionMode.faceOnly);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
 
       try {
@@ -824,8 +884,9 @@ void main() {
     });
 
     testWidgets('is faster than full mode on the same image', (tester) async {
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
       addTearDown(mat.dispose);
 
@@ -849,9 +910,11 @@ void main() {
 
       final fullMs = await bench(DogDetectionMode.full);
       final faceMs = await bench(DogDetectionMode.faceOnly);
-      debugPrint('FACEONLY full=${fullMs.toStringAsFixed(1)}ms '
-          'faceOnly=${faceMs.toStringAsFixed(1)}ms '
-          'saved=${(fullMs - faceMs).toStringAsFixed(1)}ms');
+      debugPrint(
+        'FACEONLY full=${fullMs.toStringAsFixed(1)}ms '
+        'faceOnly=${faceMs.toStringAsFixed(1)}ms '
+        'saved=${(fullMs - faceMs).toStringAsFixed(1)}ms',
+      );
 
       // faceOnly skips SSD, species and pose, so it must be cheaper. Debug-mode
       // timings are noisy, so this only asserts the direction.
@@ -873,8 +936,9 @@ void main() {
       await detector.initialize();
       expect(detector.isReady, true);
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 
@@ -898,13 +962,15 @@ void main() {
       await detector.dispose();
     });
 
-    testWidgets('should detect dogs from a Mat via the isolate',
-        (tester) async {
+    testWidgets('should detect dogs from a Mat via the isolate', (
+      tester,
+    ) async {
       final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
       expect(mat.isEmpty, isFalse);
 
@@ -928,8 +994,9 @@ void main() {
       final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final mat = cv.imdecode(bytes, cv.IMREAD_COLOR);
 
@@ -939,9 +1006,11 @@ void main() {
 
         expect(fromBytes.length, fromMat.length);
         for (int i = 0; i < fromBytes.length; i++) {
-          expect(fromBytes[i].face?.landmarks.length,
-              fromMat[i].face?.landmarks.length,
-              reason: 'Landmark count mismatch at index $i');
+          expect(
+            fromBytes[i].face?.landmarks.length,
+            fromMat[i].face?.landmarks.length,
+            reason: 'Landmark count mismatch at index $i',
+          );
         }
       } finally {
         mat.dispose();
@@ -952,8 +1021,9 @@ void main() {
 
     testWidgets('should reject detect() before initialize()', (tester) async {
       final detector = DogDetector();
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
 
       expect(detector.isReady, false);
       await expectLater(
@@ -973,24 +1043,28 @@ void main() {
       await detector.initialize();
       expect(detector.isReady, true);
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
-      final List<Dog> results =
-          await detector.detect(data.buffer.asUint8List());
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
+      final List<Dog> results = await detector.detect(
+        data.buffer.asUint8List(),
+      );
 
       expect(results, isNotEmpty);
 
       await detector.dispose();
     });
 
-    testWidgets('should handle three sequential detect calls on one isolate',
-        (tester) async {
+    testWidgets('should handle three sequential detect calls on one isolate', (
+      tester,
+    ) async {
       final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
       expect(detector.isReady, true);
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
 
       final List<Dog> first = await detector.detect(bytes);
@@ -1007,36 +1081,39 @@ void main() {
     });
 
     testWidgets(
-        'should handle two sequential detectFromMat calls on one isolate',
-        (tester) async {
-      final detector = DogDetector(mode: DogDetectionMode.full);
-      await detector.initialize();
+      'should handle two sequential detectFromMat calls on one isolate',
+      (tester) async {
+        final detector = DogDetector(mode: DogDetectionMode.full);
+        await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
-      final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
-      expect(mat.isEmpty, isFalse);
+        final ByteData data = await rootBundle.load(
+          'assets/samples/sample_dog_1.png',
+        );
+        final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
+        expect(mat.isEmpty, isFalse);
 
-      try {
-        final List<Dog> first = await detector.detectFromMat(mat);
-        final List<Dog> second = await detector.detectFromMat(mat);
+        try {
+          final List<Dog> first = await detector.detectFromMat(mat);
+          final List<Dog> second = await detector.detectFromMat(mat);
 
-        expect(first, isNotEmpty);
-        expect(second, isNotEmpty);
-        expect(first.length, second.length);
-      } finally {
-        mat.dispose();
-      }
+          expect(first, isNotEmpty);
+          expect(second, isNotEmpty);
+          expect(first.length, second.length);
+        } finally {
+          mat.dispose();
+        }
 
-      await detector.dispose();
-    });
+        await detector.dispose();
+      },
+    );
 
     testWidgets('concurrent detect calls should all resolve', (tester) async {
       final detector = DogDetector(mode: DogDetectionMode.full);
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
 
       // One worker, three in-flight requests: the RPC layer must keep replies
@@ -1079,11 +1156,13 @@ void main() {
       final bytes = _TestUtils.createTinyBlackPng();
       expect(
         () => detector.detect(bytes),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('not initialized'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('not initialized'),
+          ),
+        ),
       );
     });
 
@@ -1091,8 +1170,9 @@ void main() {
       final detector = DogDetector();
       await detector.initialize();
 
-      final ByteData data =
-          await rootBundle.load('assets/samples/sample_dog_1.png');
+      final ByteData data = await rootBundle.load(
+        'assets/samples/sample_dog_1.png',
+      );
       final Uint8List bytes = data.buffer.asUint8List();
       final List<Dog> results = await detector.detect(bytes);
 

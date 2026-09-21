@@ -14,8 +14,9 @@ void main() {
     );
     await detector.initialize();
 
-    final ByteData data =
-        await rootBundle.load('assets/samples/dachshund_test.jpg');
+    final ByteData data = await rootBundle.load(
+      'assets/samples/dachshund_test.jpg',
+    );
     final Uint8List bytes = data.buffer.asUint8List();
 
     final List<Dog> results = await detector.detect(bytes);
@@ -24,8 +25,10 @@ void main() {
     expect(results, isNotEmpty, reason: 'No dog detected in dachshund image');
 
     final dog = results.first;
-    debugPrint('Bounding box: ${dog.boundingBox.left}, ${dog.boundingBox.top}, '
-        '${dog.boundingBox.right}, ${dog.boundingBox.bottom}');
+    debugPrint(
+      'Bounding box: ${dog.boundingBox.left}, ${dog.boundingBox.top}, '
+      '${dog.boundingBox.right}, ${dog.boundingBox.bottom}',
+    );
     debugPrint('Score: ${dog.score}');
     debugPrint('Face landmarks: ${dog.face?.landmarks.length}');
 
@@ -42,7 +45,8 @@ void main() {
     for (int i = 0; i < 5; i++) {
       final lm = dog.face!.landmarks[i];
       debugPrint(
-          '  ${lm.type.name}: (${lm.x.toStringAsFixed(1)}, ${lm.y.toStringAsFixed(1)})');
+        '  ${lm.type.name}: (${lm.x.toStringAsFixed(1)}, ${lm.y.toStringAsFixed(1)})',
+      );
     }
 
     await detector.dispose();

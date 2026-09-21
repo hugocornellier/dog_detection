@@ -58,8 +58,11 @@ void main() {
   group('Pipeline equivalence with Python', () {
     test('detects exactly 1 dog', () {
       final refDogs = refData['dogs'] as List;
-      expect(results.length, equals(refDogs.length),
-          reason: 'Number of detected dogs should match Python');
+      expect(
+        results.length,
+        equals(refDogs.length),
+        reason: 'Number of detected dogs should match Python',
+      );
       expect(results.length, equals(1));
     });
 
@@ -68,10 +71,16 @@ void main() {
       final refScore = (refDog['det_score'] as num).toDouble();
 
       // Score should be very close (both > 0.999)
-      expect(results[0].score, greaterThan(0.99),
-          reason: 'Detection score should be > 0.99');
-      expect((results[0].score - refScore).abs(), lessThan(0.01),
-          reason: 'Detection score should match Python within 0.01');
+      expect(
+        results[0].score,
+        greaterThan(0.99),
+        reason: 'Detection score should be > 0.99',
+      );
+      expect(
+        (results[0].score - refScore).abs(),
+        lessThan(0.01),
+        reason: 'Detection score should match Python within 0.01',
+      );
     });
 
     test('SSD bounding box matches within tolerance', () {
@@ -83,20 +92,35 @@ void main() {
       final bbox = results[0].boundingBox;
 
       _expectClose(
-          bbox.left, refBbox[0].toDouble(), bboxTolerance, 'bbox.left');
+        bbox.left,
+        refBbox[0].toDouble(),
+        bboxTolerance,
+        'bbox.left',
+      );
       _expectClose(bbox.top, refBbox[1].toDouble(), bboxTolerance, 'bbox.top');
       _expectClose(
-          bbox.right, refBbox[2].toDouble(), bboxTolerance, 'bbox.right');
+        bbox.right,
+        refBbox[2].toDouble(),
+        bboxTolerance,
+        'bbox.right',
+      );
       _expectClose(
-          bbox.bottom, refBbox[3].toDouble(), bboxTolerance, 'bbox.bottom');
+        bbox.bottom,
+        refBbox[3].toDouble(),
+        bboxTolerance,
+        'bbox.bottom',
+      );
     });
 
     test('species classification matches', () {
       final refDog = (refData['dogs'] as List)[0] as Map<String, dynamic>;
       final refSpecies = refDog['species'] as String;
 
-      expect(results[0].species, equals(refSpecies),
-          reason: 'Species should match Python ("dog")');
+      expect(
+        results[0].species,
+        equals(refSpecies),
+        reason: 'Species should match Python ("dog")',
+      );
     });
 
     test('species confidence is reasonable', () {
@@ -111,21 +135,25 @@ void main() {
       expect(
         (results[0].speciesConfidence! - refConf).abs(),
         lessThan(0.30),
-        reason: 'Species confidence should match Python within 0.30. '
+        reason:
+            'Species confidence should match Python within 0.30. '
             'Got ${results[0].speciesConfidence}, expected $refConf',
       );
     });
 
     test('body pose has 24 keypoints', () {
       expect(results[0].pose, isNotNull, reason: 'Pose should not be null');
-      expect(results[0].pose!.landmarks.length, equals(24),
-          reason: 'Should have 24 body keypoints (indices 15-38)');
+      expect(
+        results[0].pose!.landmarks.length,
+        equals(24),
+        reason: 'Should have 24 body keypoints (indices 15-38)',
+      );
     });
 
     test('body pose keypoints match within tolerance', () {
       final refDog = (refData['dogs'] as List)[0] as Map<String, dynamic>;
-      final refKps =
-          (refDog['body_keypoints'] as List).cast<Map<String, dynamic>>();
+      final refKps = (refDog['body_keypoints'] as List)
+          .cast<Map<String, dynamic>>();
 
       final pose = results[0].pose!;
 
@@ -144,15 +172,26 @@ void main() {
         final dartKp = pose.landmarks[i];
 
         _expectClose(
-            dartKp.x, refX, kpTolerance, 'body_kp[${refKp['name']}].x');
+          dartKp.x,
+          refX,
+          kpTolerance,
+          'body_kp[${refKp['name']}].x',
+        );
         _expectClose(
-            dartKp.y, refY, kpTolerance, 'body_kp[${refKp['name']}].y');
+          dartKp.y,
+          refY,
+          kpTolerance,
+          'body_kp[${refKp['name']}].y',
+        );
       }
     });
 
     test('face is detected', () {
-      expect(results[0].face, isNotNull,
-          reason: 'Face should be detected in full mode');
+      expect(
+        results[0].face,
+        isNotNull,
+        reason: 'Face should be detected in full mode',
+      );
     });
 
     test('face bounding box matches within tolerance', () {
@@ -167,26 +206,45 @@ void main() {
       // - Letterbox resize differences
       const faceBboxTolerance = 25.0;
 
-      _expectClose(faceBbox.left, refFaceBbox[0].toDouble(), faceBboxTolerance,
-          'face_bbox.left');
-      _expectClose(faceBbox.top, refFaceBbox[1].toDouble(), faceBboxTolerance,
-          'face_bbox.top');
-      _expectClose(faceBbox.right, refFaceBbox[2].toDouble(), faceBboxTolerance,
-          'face_bbox.right');
-      _expectClose(faceBbox.bottom, refFaceBbox[3].toDouble(),
-          faceBboxTolerance, 'face_bbox.bottom');
+      _expectClose(
+        faceBbox.left,
+        refFaceBbox[0].toDouble(),
+        faceBboxTolerance,
+        'face_bbox.left',
+      );
+      _expectClose(
+        faceBbox.top,
+        refFaceBbox[1].toDouble(),
+        faceBboxTolerance,
+        'face_bbox.top',
+      );
+      _expectClose(
+        faceBbox.right,
+        refFaceBbox[2].toDouble(),
+        faceBboxTolerance,
+        'face_bbox.right',
+      );
+      _expectClose(
+        faceBbox.bottom,
+        refFaceBbox[3].toDouble(),
+        faceBboxTolerance,
+        'face_bbox.bottom',
+      );
     });
 
     test('face has 46 landmarks', () {
       expect(results[0].face!.hasLandmarks, isTrue);
-      expect(results[0].face!.landmarks.length, equals(46),
-          reason: 'Should have 46 face landmarks');
+      expect(
+        results[0].face!.landmarks.length,
+        equals(46),
+        reason: 'Should have 46 face landmarks',
+      );
     });
 
     test('face landmarks match within tolerance', () {
       final refDog = (refData['dogs'] as List)[0] as Map<String, dynamic>;
-      final refLms =
-          (refDog['face_landmarks'] as List).cast<Map<String, dynamic>>();
+      final refLms = (refDog['face_landmarks'] as List)
+          .cast<Map<String, dynamic>>();
 
       final faceLms = results[0].face!.landmarks;
 
@@ -209,36 +267,42 @@ void main() {
       }
     });
 
-    test('AnimalPoseLandmarkType enum indices match Python keypoint indices',
-        () {
-      // Verify the enum ordering matches the Python keypoint name mapping
-      expect(
-          AnimalPoseLandmarkType.neckBase.index, equals(0)); // Python index 15
-      expect(
-          AnimalPoseLandmarkType.neckEnd.index, equals(1)); // Python index 16
-      expect(AnimalPoseLandmarkType.throatBase.index, equals(2)); // 17
-      expect(AnimalPoseLandmarkType.throatEnd.index, equals(3)); // 18
-      expect(AnimalPoseLandmarkType.backBase.index, equals(4)); // 19
-      expect(AnimalPoseLandmarkType.backEnd.index, equals(5)); // 20
-      expect(AnimalPoseLandmarkType.backMiddle.index, equals(6)); // 21
-      expect(AnimalPoseLandmarkType.tailBase.index, equals(7)); // 22
-      expect(AnimalPoseLandmarkType.tailEnd.index, equals(8)); // 23
-      expect(AnimalPoseLandmarkType.frontLeftThigh.index, equals(9)); // 24
-      expect(AnimalPoseLandmarkType.frontLeftKnee.index, equals(10)); // 25
-      expect(AnimalPoseLandmarkType.frontLeftPaw.index, equals(11)); // 26
-      expect(AnimalPoseLandmarkType.frontRightThigh.index, equals(12)); // 27
-      expect(AnimalPoseLandmarkType.frontRightKnee.index, equals(13)); // 28
-      expect(AnimalPoseLandmarkType.frontRightPaw.index, equals(14)); // 29
-      expect(AnimalPoseLandmarkType.backLeftPaw.index, equals(15)); // 30
-      expect(AnimalPoseLandmarkType.backLeftThigh.index, equals(16)); // 31
-      expect(AnimalPoseLandmarkType.backRightThigh.index, equals(17)); // 32
-      expect(AnimalPoseLandmarkType.backLeftKnee.index, equals(18)); // 33
-      expect(AnimalPoseLandmarkType.backRightKnee.index, equals(19)); // 34
-      expect(AnimalPoseLandmarkType.backRightPaw.index, equals(20)); // 35
-      expect(AnimalPoseLandmarkType.bellyBottom.index, equals(21)); // 36
-      expect(AnimalPoseLandmarkType.bodyMiddleRight.index, equals(22)); // 37
-      expect(AnimalPoseLandmarkType.bodyMiddleLeft.index, equals(23)); // 38
-    });
+    test(
+      'AnimalPoseLandmarkType enum indices match Python keypoint indices',
+      () {
+        // Verify the enum ordering matches the Python keypoint name mapping
+        expect(
+          AnimalPoseLandmarkType.neckBase.index,
+          equals(0),
+        ); // Python index 15
+        expect(
+          AnimalPoseLandmarkType.neckEnd.index,
+          equals(1),
+        ); // Python index 16
+        expect(AnimalPoseLandmarkType.throatBase.index, equals(2)); // 17
+        expect(AnimalPoseLandmarkType.throatEnd.index, equals(3)); // 18
+        expect(AnimalPoseLandmarkType.backBase.index, equals(4)); // 19
+        expect(AnimalPoseLandmarkType.backEnd.index, equals(5)); // 20
+        expect(AnimalPoseLandmarkType.backMiddle.index, equals(6)); // 21
+        expect(AnimalPoseLandmarkType.tailBase.index, equals(7)); // 22
+        expect(AnimalPoseLandmarkType.tailEnd.index, equals(8)); // 23
+        expect(AnimalPoseLandmarkType.frontLeftThigh.index, equals(9)); // 24
+        expect(AnimalPoseLandmarkType.frontLeftKnee.index, equals(10)); // 25
+        expect(AnimalPoseLandmarkType.frontLeftPaw.index, equals(11)); // 26
+        expect(AnimalPoseLandmarkType.frontRightThigh.index, equals(12)); // 27
+        expect(AnimalPoseLandmarkType.frontRightKnee.index, equals(13)); // 28
+        expect(AnimalPoseLandmarkType.frontRightPaw.index, equals(14)); // 29
+        expect(AnimalPoseLandmarkType.backLeftPaw.index, equals(15)); // 30
+        expect(AnimalPoseLandmarkType.backLeftThigh.index, equals(16)); // 31
+        expect(AnimalPoseLandmarkType.backRightThigh.index, equals(17)); // 32
+        expect(AnimalPoseLandmarkType.backLeftKnee.index, equals(18)); // 33
+        expect(AnimalPoseLandmarkType.backRightKnee.index, equals(19)); // 34
+        expect(AnimalPoseLandmarkType.backRightPaw.index, equals(20)); // 35
+        expect(AnimalPoseLandmarkType.bellyBottom.index, equals(21)); // 36
+        expect(AnimalPoseLandmarkType.bodyMiddleRight.index, equals(22)); // 37
+        expect(AnimalPoseLandmarkType.bodyMiddleLeft.index, equals(23)); // 38
+      },
+    );
   });
 
   group('Pipeline sanity checks', () {
@@ -256,14 +320,26 @@ void main() {
       final w = results[0].imageWidth.toDouble();
       final h = results[0].imageHeight.toDouble();
       for (final lm in results[0].pose!.landmarks) {
-        expect(lm.x, greaterThanOrEqualTo(-50),
-            reason: '${lm.type.name}.x should be >= -50');
-        expect(lm.x, lessThanOrEqualTo(w + 50),
-            reason: '${lm.type.name}.x should be <= width+50');
-        expect(lm.y, greaterThanOrEqualTo(-50),
-            reason: '${lm.type.name}.y should be >= -50');
-        expect(lm.y, lessThanOrEqualTo(h + 50),
-            reason: '${lm.type.name}.y should be <= height+50');
+        expect(
+          lm.x,
+          greaterThanOrEqualTo(-50),
+          reason: '${lm.type.name}.x should be >= -50',
+        );
+        expect(
+          lm.x,
+          lessThanOrEqualTo(w + 50),
+          reason: '${lm.type.name}.x should be <= width+50',
+        );
+        expect(
+          lm.y,
+          greaterThanOrEqualTo(-50),
+          reason: '${lm.type.name}.y should be >= -50',
+        );
+        expect(
+          lm.y,
+          lessThanOrEqualTo(h + 50),
+          reason: '${lm.type.name}.y should be <= height+50',
+        );
       }
     });
 
@@ -271,14 +347,26 @@ void main() {
       final w = results[0].imageWidth.toDouble();
       final h = results[0].imageHeight.toDouble();
       for (final lm in results[0].face!.landmarks) {
-        expect(lm.x, greaterThanOrEqualTo(-50),
-            reason: '${lm.type.name}.x should be >= -50');
-        expect(lm.x, lessThanOrEqualTo(w + 50),
-            reason: '${lm.type.name}.x should be <= width+50');
-        expect(lm.y, greaterThanOrEqualTo(-50),
-            reason: '${lm.type.name}.y should be >= -50');
-        expect(lm.y, lessThanOrEqualTo(h + 50),
-            reason: '${lm.type.name}.y should be <= height+50');
+        expect(
+          lm.x,
+          greaterThanOrEqualTo(-50),
+          reason: '${lm.type.name}.x should be >= -50',
+        );
+        expect(
+          lm.x,
+          lessThanOrEqualTo(w + 50),
+          reason: '${lm.type.name}.x should be <= width+50',
+        );
+        expect(
+          lm.y,
+          greaterThanOrEqualTo(-50),
+          reason: '${lm.type.name}.y should be >= -50',
+        );
+        expect(
+          lm.y,
+          lessThanOrEqualTo(h + 50),
+          reason: '${lm.type.name}.y should be <= height+50',
+        );
       }
     });
 
@@ -293,18 +381,30 @@ void main() {
       expect(restored.imageHeight, equals(dog.imageHeight));
       expect(restored.boundingBox.left, equals(dog.boundingBox.left));
       expect(
-          restored.pose?.landmarks.length, equals(dog.pose?.landmarks.length));
+        restored.pose?.landmarks.length,
+        equals(dog.pose?.landmarks.length),
+      );
       expect(
-          restored.face?.landmarks.length, equals(dog.face?.landmarks.length));
+        restored.face?.landmarks.length,
+        equals(dog.face?.landmarks.length),
+      );
     });
   });
 }
 
 /// Asserts that [actual] is within [tolerance] of [expected].
 void _expectClose(
-    double actual, double expected, double tolerance, String label) {
+  double actual,
+  double expected,
+  double tolerance,
+  String label,
+) {
   final diff = (actual - expected).abs();
-  expect(diff, lessThanOrEqualTo(tolerance),
-      reason: '$label: expected $expected, got $actual (diff=$diff, '
-          'tolerance=$tolerance)');
+  expect(
+    diff,
+    lessThanOrEqualTo(tolerance),
+    reason:
+        '$label: expected $expected, got $actual (diff=$diff, '
+        'tolerance=$tolerance)',
+  );
 }

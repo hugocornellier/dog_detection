@@ -9,10 +9,7 @@ const _imagePath = 'assets/samples/sample_dog_1.png';
 Future<List<Dog>> _detect({
   required String label,
   required bool useCompiledModel,
-  Set<Accelerator> accelerators = const {
-    Accelerator.gpu,
-    Accelerator.cpu,
-  },
+  Set<Accelerator> accelerators = const {Accelerator.gpu, Accelerator.cpu},
 }) async {
   final detector = DogDetector(mode: DogDetectionMode.full);
   await detector.initialize(
@@ -37,11 +34,11 @@ Future<List<Dog>> _detect({
 }
 
 double _boxDelta(BoundingBox a, BoundingBox b) => [
-      (a.left - b.left).abs(),
-      (a.top - b.top).abs(),
-      (a.right - b.right).abs(),
-      (a.bottom - b.bottom).abs(),
-    ].reduce((x, y) => x > y ? x : y);
+  (a.left - b.left).abs(),
+  (a.top - b.top).abs(),
+  (a.right - b.right).abs(),
+  (a.bottom - b.bottom).abs(),
+].reduce((x, y) => x > y ? x : y);
 
 void _expectParity(List<Dog> expected, List<Dog> actual, String label) {
   expect(actual.length, expected.length, reason: '$label animal count');
@@ -127,8 +124,9 @@ void _expectParity(List<Dog> expected, List<Dog> actual, String label) {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('full pipeline matches across all native backends',
-      (tester) async {
+  testWidgets('full pipeline matches across all native backends', (
+    tester,
+  ) async {
     final interpreter = await _detect(
       label: 'Interpreter',
       useCompiledModel: false,

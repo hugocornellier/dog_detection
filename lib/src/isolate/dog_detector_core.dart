@@ -136,10 +136,7 @@ class DogDetectorCore {
     Uint8List? poseModelBytes,
     bool useIsolateInterpreter = true,
     bool useCompiledModel = true,
-    Set<Accelerator> accelerators = const {
-      Accelerator.gpu,
-      Accelerator.cpu,
-    },
+    Set<Accelerator> accelerators = const {Accelerator.gpu, Accelerator.cpu},
     Precision precision = Precision.fp32,
   }) async {
     if (_isInitialized) {
@@ -199,9 +196,7 @@ class DogDetectorCore {
         );
       }
       if (landmarkBytes == null) {
-        throw ArgumentError(
-          'landmarkBytes is required for full/faceOnly mode',
-        );
+        throw ArgumentError('landmarkBytes is required for full/faceOnly mode');
       }
 
       _localizer = FaceLocalizerModel(
@@ -350,8 +345,12 @@ class DogDetectorCore {
     final BoundingBox? bbox = await _localizer!.detect(image);
     if (bbox == null) return <Dog>[];
 
-    final DogFace face =
-        await _runFaceLandmarks(image, bbox, imageWidth, imageHeight);
+    final DogFace face = await _runFaceLandmarks(
+      image,
+      bbox,
+      imageWidth,
+      imageHeight,
+    );
 
     return [
       Dog(
@@ -421,8 +420,9 @@ class DogDetectorCore {
           final expandedCrop = image.region(cv.Rect(cx1, cy1, cropW, cropH));
           try {
             // Detect face in the dog crop space
-            final BoundingBox? faceBboxInCrop =
-                await _localizer!.detect(expandedCrop);
+            final BoundingBox? faceBboxInCrop = await _localizer!.detect(
+              expandedCrop,
+            );
 
             if (faceBboxInCrop != null) {
               // Offset face bbox from crop space to original image space
@@ -446,20 +446,22 @@ class DogDetectorCore {
         }
       }
 
-      dogs.add(Dog(
-        boundingBox: animal.boundingBox,
-        score: animal.score,
-        species: animal.species,
-        // Null for the near-miss block: the most likely explanation is a
-        // domestic dog the classifier placed on a neighbouring class, so
-        // the label would name an animal this is probably not.
-        breed: animal.species == 'dog' ? animal.breed : null,
-        speciesConfidence: animal.speciesConfidence,
-        face: face,
-        pose: animal.pose,
-        imageWidth: imageWidth,
-        imageHeight: imageHeight,
-      ));
+      dogs.add(
+        Dog(
+          boundingBox: animal.boundingBox,
+          score: animal.score,
+          species: animal.species,
+          // Null for the near-miss block: the most likely explanation is a
+          // domestic dog the classifier placed on a neighbouring class, so
+          // the label would name an animal this is probably not.
+          breed: animal.species == 'dog' ? animal.breed : null,
+          speciesConfidence: animal.speciesConfidence,
+          face: face,
+          pose: animal.pose,
+          imageWidth: imageWidth,
+          imageHeight: imageHeight,
+        ),
+      );
     }
 
     return dogs;
@@ -487,9 +489,10 @@ class DogDetectorCore {
       landmarks = [
         for (int i = 0; i < coords.length; i++)
           DogLandmark(
-              type: DogLandmarkType.values[i],
-              x: coords[i].$1,
-              y: coords[i].$2),
+            type: DogLandmarkType.values[i],
+            x: coords[i].$1,
+            y: coords[i].$2,
+          ),
       ];
     } finally {
       faceCrop.dispose();

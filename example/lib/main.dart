@@ -20,10 +20,7 @@ class DogDetectionApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Dog Detection Demo',
-      theme: ThemeData(
-        colorSchemeSeed: Colors.brown,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorSchemeSeed: Colors.brown, useMaterial3: true),
       home: const DogDetectionHome(),
     );
   }
@@ -35,9 +32,7 @@ class DogDetectionHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dog Detection Demo'),
-      ),
+      appBar: AppBar(title: const Text('Dog Detection Demo')),
       body: _ScrollableCentered(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -102,11 +97,7 @@ class DogDetectionHome extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(
-    BuildContext context,
-    String title,
-    List<Widget> cards,
-  ) {
+  Widget _buildSection(BuildContext context, String title, List<Widget> cards) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,9 +107,9 @@ class DogDetectionHome extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -170,9 +161,9 @@ class DogDetectionHome extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -269,8 +260,9 @@ class _StillImageScreenState extends State<StillImageScreen> {
         onDownloadProgress: (model, received, total) {
           if (!mounted) return;
           final mb = (received / 1024 / 1024).toStringAsFixed(1);
-          final totalMb =
-              total > 0 ? (total / 1024 / 1024).toStringAsFixed(1) : '?';
+          final totalMb = total > 0
+              ? (total / 1024 / 1024).toStringAsFixed(1)
+              : '?';
           final String name;
           if (model.contains('hrnet')) {
             name = 'HRNet';
@@ -467,10 +459,9 @@ class _StillImageScreenState extends State<StillImageScreen> {
               Text(
                 'This is a one-time download. Models will be cached for future use.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.grey[600]),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
               ),
             ],
           ),
@@ -585,9 +576,7 @@ class _StillImageScreenState extends State<StillImageScreen> {
                           Expanded(
                             child: Text(
                               'Detected: ${_results.length} dog${_results.length > 1 ? 's' : ''}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
+                              style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(
                                     color: Colors.green,
                                     fontWeight: FontWeight.bold,
@@ -643,8 +632,8 @@ class _StillImageScreenState extends State<StillImageScreen> {
         ElevatedButton.icon(
           onPressed: _isInitialized && !_isProcessing
               ? () => _isDesktop
-                  ? _pickFileFromSystem()
-                  : _pickImage(ImageSource.gallery)
+                    ? _pickFileFromSystem()
+                    : _pickImage(ImageSource.gallery)
               : null,
           icon: const Icon(Icons.photo_library),
           label: Text(_isDesktop ? 'Open File' : 'Gallery'),
@@ -715,7 +704,8 @@ class _StillImageScreenState extends State<StillImageScreen> {
               const SizedBox(height: 8),
               RadioGroup<AnimalPoseModel>(
                 groupValue: _poseModel,
-                onChanged: (_detectionMode == DogDetectionMode.faceOnly ||
+                onChanged:
+                    (_detectionMode == DogDetectionMode.faceOnly ||
                         _isDownloading)
                     ? (_) {}
                     : (value) {
@@ -728,14 +718,16 @@ class _StillImageScreenState extends State<StillImageScreen> {
                   children: [
                     RadioListTile<AnimalPoseModel>(
                       title: const Text('RTMPose-S'),
-                      subtitle:
-                          const Text('11.6 MB, bundled. Fast SimCC decoder.'),
+                      subtitle: const Text(
+                        '11.6 MB, bundled. Fast SimCC decoder.',
+                      ),
                       value: AnimalPoseModel.rtmpose,
                     ),
                     RadioListTile<AnimalPoseModel>(
                       title: const Text('HRNet-w32'),
                       subtitle: const Text(
-                          '54.6 MB, downloaded on demand. Most accurate.'),
+                        '54.6 MB, downloaded on demand. Most accurate.',
+                      ),
                       value: AnimalPoseModel.hrnet,
                     ),
                   ],
@@ -793,9 +785,9 @@ class _StillImageScreenState extends State<StillImageScreen> {
             for (final dog in _results) ...[
               Text(
                 'Dog (score: ${(dog.score * 100).toStringAsFixed(1)}%)',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               if (dog.species != null)
                 Padding(
@@ -808,28 +800,32 @@ class _StillImageScreenState extends State<StillImageScreen> {
                   'Body Pose (${dog.pose!.landmarks.length} keypoints)',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-                ...dog.pose!.landmarks.map((lm) => Card(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      child: ListTile(
-                        dense: true,
-                        leading: CircleAvatar(
-                          radius: 14,
-                          backgroundColor: Colors.red,
-                          child: Text(
-                            lm.type.index.toString(),
-                            style: const TextStyle(
-                                fontSize: 9, color: Colors.white),
+                ...dog.pose!.landmarks.map(
+                  (lm) => Card(
+                    margin: const EdgeInsets.only(bottom: 4),
+                    child: ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 14,
+                        backgroundColor: Colors.red,
+                        child: Text(
+                          lm.type.index.toString(),
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Colors.white,
                           ),
                         ),
-                        title: Text(
-                          lm.type.name,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          'Position: (${lm.x.toStringAsFixed(1)}, ${lm.y.toStringAsFixed(1)})  conf: ${(lm.confidence * 100).toStringAsFixed(0)}%',
-                        ),
                       ),
-                    )),
+                      title: Text(
+                        lm.type.name,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      subtitle: Text(
+                        'Position: (${lm.x.toStringAsFixed(1)}, ${lm.y.toStringAsFixed(1)})  conf: ${(lm.confidence * 100).toStringAsFixed(0)}%',
+                      ),
+                    ),
+                  ),
+                ),
               ],
               if (dog.face != null && dog.face!.hasLandmarks) ...[
                 const SizedBox(height: 8),
@@ -837,28 +833,32 @@ class _StillImageScreenState extends State<StillImageScreen> {
                   'Face Landmarks (${dog.face!.landmarks.length} keypoints)',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-                ...dog.face!.landmarks.map((lm) => Card(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      child: ListTile(
-                        dense: true,
-                        leading: CircleAvatar(
-                          radius: 14,
-                          backgroundColor: _landmarkColor(lm.type),
-                          child: Text(
-                            lm.type.index.toString(),
-                            style: const TextStyle(
-                                fontSize: 9, color: Colors.white),
+                ...dog.face!.landmarks.map(
+                  (lm) => Card(
+                    margin: const EdgeInsets.only(bottom: 4),
+                    child: ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 14,
+                        backgroundColor: _landmarkColor(lm.type),
+                        child: Text(
+                          lm.type.index.toString(),
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Colors.white,
                           ),
                         ),
-                        title: Text(
-                          lm.type.name,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          'Position: (${lm.x.toStringAsFixed(1)}, ${lm.y.toStringAsFixed(1)})',
-                        ),
                       ),
-                    )),
+                      title: Text(
+                        lm.type.name,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      subtitle: Text(
+                        'Position: (${lm.x.toStringAsFixed(1)}, ${lm.y.toStringAsFixed(1)})',
+                      ),
+                    ),
+                  ),
+                ),
               ],
               if (dog != _results.last) const Divider(height: 24),
             ],
@@ -898,22 +898,24 @@ class DogVisualizerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      return Stack(
-        children: [
-          Image.memory(imageBytes, fit: BoxFit.contain),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: DogOverlayPainter(
-                results: results,
-                imageWidth: imageWidth,
-                imageHeight: imageHeight,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: [
+            Image.memory(imageBytes, fit: BoxFit.contain),
+            Positioned.fill(
+              child: CustomPaint(
+                painter: DogOverlayPainter(
+                  results: results,
+                  imageWidth: imageWidth,
+                  imageHeight: imageHeight,
+                ),
               ),
             ),
-          ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -958,19 +960,43 @@ class DogOverlayPainter extends CustomPainter {
 
       if (dog.face != null) {
         _drawFaceBoundingBox(
-            canvas, dog.face!, scaleX, scaleY, offsetX, offsetY);
+          canvas,
+          dog.face!,
+          scaleX,
+          scaleY,
+          offsetX,
+          offsetY,
+        );
         if (dog.face!.hasLandmarks) {
           _drawFaceConnections(
-              canvas, dog.face!, scaleX, scaleY, offsetX, offsetY);
+            canvas,
+            dog.face!,
+            scaleX,
+            scaleY,
+            offsetX,
+            offsetY,
+          );
           _drawFaceLandmarks(
-              canvas, dog.face!, scaleX, scaleY, offsetX, offsetY);
+            canvas,
+            dog.face!,
+            scaleX,
+            scaleY,
+            offsetX,
+            offsetY,
+          );
         }
       }
     }
   }
 
-  void _drawBodyBoundingBox(Canvas canvas, Dog dog, double scaleX,
-      double scaleY, double offsetX, double offsetY) {
+  void _drawBodyBoundingBox(
+    Canvas canvas,
+    Dog dog,
+    double scaleX,
+    double scaleY,
+    double offsetX,
+    double offsetY,
+  ) {
     final Paint strokePaint = Paint()
       ..color = Colors.orange.withValues(alpha: 0.9)
       ..style = PaintingStyle.stroke
@@ -989,8 +1015,14 @@ class DogOverlayPainter extends CustomPainter {
     canvas.drawRect(rect, strokePaint);
   }
 
-  void _drawSpeciesLabel(Canvas canvas, Dog dog, double scaleX, double scaleY,
-      double offsetX, double offsetY) {
+  void _drawSpeciesLabel(
+    Canvas canvas,
+    Dog dog,
+    double scaleX,
+    double scaleY,
+    double offsetX,
+    double offsetY,
+  ) {
     if (dog.species == null) return;
 
     final double x1 = dog.boundingBox.left * scaleX + offsetX;
@@ -1001,10 +1033,7 @@ class DogOverlayPainter extends CustomPainter {
     final String? confidence = dog.speciesConfidence == null
         ? null
         : '${(dog.speciesConfidence! * 100).toStringAsFixed(0)}%';
-    final List<String> parts = [
-      ?dog.breed,
-      ?confidence,
-    ];
+    final List<String> parts = [?dog.breed, ?confidence];
     final String breedInfo = parts.isEmpty ? '' : ' (${parts.join(', ')})';
     final String label = '${dog.species}$breedInfo';
     final TextPainter textPainter = TextPainter(
@@ -1036,8 +1065,14 @@ class DogOverlayPainter extends CustomPainter {
     textPainter.paint(canvas, Offset(x1 + padding, labelY + padding));
   }
 
-  void _drawBodySkeleton(Canvas canvas, Dog dog, double scaleX, double scaleY,
-      double offsetX, double offsetY) {
+  void _drawBodySkeleton(
+    Canvas canvas,
+    Dog dog,
+    double scaleX,
+    double scaleY,
+    double offsetX,
+    double offsetY,
+  ) {
     final Paint posePaint = Paint()
       ..color = Colors.orange.withValues(alpha: 0.8)
       ..strokeWidth = 2.5
@@ -1056,18 +1091,32 @@ class DogOverlayPainter extends CustomPainter {
     }
   }
 
-  void _drawBodyKeypoints(Canvas canvas, Dog dog, double scaleX, double scaleY,
-      double offsetX, double offsetY) {
+  void _drawBodyKeypoints(
+    Canvas canvas,
+    Dog dog,
+    double scaleX,
+    double scaleY,
+    double offsetX,
+    double offsetY,
+  ) {
     for (final lm in dog.pose!.landmarks) {
-      final Offset center =
-          Offset(lm.x * scaleX + offsetX, lm.y * scaleY + offsetY);
+      final Offset center = Offset(
+        lm.x * scaleX + offsetX,
+        lm.y * scaleY + offsetY,
+      );
       canvas.drawCircle(center, 5, Paint()..color = Colors.red);
       canvas.drawCircle(center, 2, Paint()..color = Colors.white);
     }
   }
 
-  void _drawFaceBoundingBox(Canvas canvas, DogFace face, double scaleX,
-      double scaleY, double offsetX, double offsetY) {
+  void _drawFaceBoundingBox(
+    Canvas canvas,
+    DogFace face,
+    double scaleX,
+    double scaleY,
+    double offsetX,
+    double offsetY,
+  ) {
     final Paint strokePaint = Paint()
       ..color = Colors.cyan.withValues(alpha: 0.9)
       ..style = PaintingStyle.stroke
@@ -1080,8 +1129,14 @@ class DogOverlayPainter extends CustomPainter {
     canvas.drawRect(Rect.fromLTRB(x1, y1, x2, y2), strokePaint);
   }
 
-  void _drawFaceConnections(Canvas canvas, DogFace face, double scaleX,
-      double scaleY, double offsetX, double offsetY) {
+  void _drawFaceConnections(
+    Canvas canvas,
+    DogFace face,
+    double scaleX,
+    double scaleY,
+    double offsetX,
+    double offsetY,
+  ) {
     final Paint paint = Paint()
       ..color = Colors.white.withValues(alpha: 0.7)
       ..strokeWidth = 2
@@ -1100,11 +1155,19 @@ class DogOverlayPainter extends CustomPainter {
     }
   }
 
-  void _drawFaceLandmarks(Canvas canvas, DogFace face, double scaleX,
-      double scaleY, double offsetX, double offsetY) {
+  void _drawFaceLandmarks(
+    Canvas canvas,
+    DogFace face,
+    double scaleX,
+    double scaleY,
+    double offsetX,
+    double offsetY,
+  ) {
     for (final lm in face.landmarks) {
-      final Offset center =
-          Offset(lm.x * scaleX + offsetX, lm.y * scaleY + offsetY);
+      final Offset center = Offset(
+        lm.x * scaleX + offsetX,
+        lm.y * scaleY + offsetY,
+      );
       final Color color = _landmarkColor(lm.type);
 
       final Paint glowPaint = Paint()..color = color.withValues(alpha: 0.3);

@@ -108,7 +108,8 @@ void main() {
     lines.add('');
     lines.add('=== GPU DELEGATE BENCH (on device) ===');
     lines.add(
-        'variant                    backend        median ms       dev  note');
+      'variant                    backend        median ms       dev  note',
+    );
 
     for (final entry in variants.entries) {
       final bytes = (await rootBundle.load(entry.value)).buffer.asUint8List();
@@ -141,12 +142,15 @@ void main() {
                 : (maxDev > 1e-2 ? 'ENGAGED BUT WRONG' : 'engaged');
           }
         } catch (e) {
-          note = 'FAILED [${e.runtimeType}] '
+          note =
+              'FAILED [${e.runtimeType}] '
               '${e.toString().split('\n').first}';
           if (note.length > 96) note = '${note.substring(0, 96)}...';
         }
-        lines.add('${entry.key.padRight(26)} ${backend.key.padRight(14)} '
-            '${ms.padLeft(9)} ${dev.padLeft(9)}  $note');
+        lines.add(
+          '${entry.key.padRight(26)} ${backend.key.padRight(14)} '
+          '${ms.padLeft(9)} ${dev.padLeft(9)}  $note',
+        );
       }
       lines.add('');
     }

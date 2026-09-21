@@ -12,7 +12,9 @@ void main() {
       // drifted to 1.0.5 while the package shipped 1.5.0.
       expect(DogDetector.modelVersion, startsWith('dog_detection:'));
       expect(
-          DogDetector.modelVersion, matches(r'^dog_detection:\d+\.\d+\.\d+:'));
+        DogDetector.modelVersion,
+        matches(r'^dog_detection:\d+\.\d+\.\d+:'),
+      );
       expect(DogDetector.modelVersion, DogDetector.modelVersionFor());
     });
 
@@ -509,8 +511,11 @@ void main() {
   // DogFace class
   // ---------------------------------------------------------------------------
   group('DogFace', () {
-    DogLandmark makeLandmark(DogLandmarkType type,
-        {double x = 0, double y = 0}) {
+    DogLandmark makeLandmark(
+      DogLandmarkType type, {
+      double x = 0,
+      double y = 0,
+    }) {
       return DogLandmark(type: type, x: x, y: y);
     }
 
@@ -593,7 +598,7 @@ void main() {
           'left': 5.0,
           'top': 10.0,
           'right': 200.0,
-          'bottom': 300.0
+          'bottom': 300.0,
         },
         'landmarks': [
           {'type': 'noseBridgeTop', 'x': 100.0, 'y': 150.0},
@@ -623,7 +628,7 @@ void main() {
           'left': 0.0,
           'top': 0.0,
           'right': 100.0,
-          'bottom': 100.0
+          'bottom': 100.0,
         },
         'landmarks': [],
       };
@@ -663,8 +668,11 @@ void main() {
     });
 
     test('edge case: single landmark', () {
-      final landmark =
-          makeLandmark(DogLandmarkType.mouthChin13, x: 55.0, y: 77.0);
+      final landmark = makeLandmark(
+        DogLandmarkType.mouthChin13,
+        x: 55.0,
+        y: 77.0,
+      );
       final face = DogFace(
         boundingBox: BoundingBox.ltrb(0, 0, 100, 100),
         landmarks: [landmark],
@@ -678,8 +686,9 @@ void main() {
     });
 
     test('getLandmark finds all types when all are present', () {
-      final landmarks =
-          DogLandmarkType.values.map((type) => makeLandmark(type)).toList();
+      final landmarks = DogLandmarkType.values
+          .map((type) => makeLandmark(type))
+          .toList();
       final face = DogFace(
         boundingBox: BoundingBox.ltrb(0, 0, 100, 100),
         landmarks: landmarks,
@@ -739,7 +748,8 @@ void main() {
       };
       final leftEarConnections = dogLandmarkConnections
           .where(
-              (c) => leftEarTypes.contains(c[0]) && leftEarTypes.contains(c[1]))
+            (c) => leftEarTypes.contains(c[0]) && leftEarTypes.contains(c[1]),
+          )
           .toList();
       expect(leftEarConnections.length, 7);
     });
@@ -755,8 +765,9 @@ void main() {
         DogLandmarkType.rightEar6,
       };
       final rightEarConnections = dogLandmarkConnections
-          .where((c) =>
-              rightEarTypes.contains(c[0]) && rightEarTypes.contains(c[1]))
+          .where(
+            (c) => rightEarTypes.contains(c[0]) && rightEarTypes.contains(c[1]),
+          )
           .toList();
       expect(rightEarConnections.length, 7);
     });
@@ -770,7 +781,8 @@ void main() {
       };
       final leftEyeConnections = dogLandmarkConnections
           .where(
-              (c) => leftEyeTypes.contains(c[0]) && leftEyeTypes.contains(c[1]))
+            (c) => leftEyeTypes.contains(c[0]) && leftEyeTypes.contains(c[1]),
+          )
           .toList();
       expect(leftEyeConnections.length, 4);
     });
@@ -783,8 +795,9 @@ void main() {
         DogLandmarkType.rightEyeBottom,
       };
       final rightEyeConnections = dogLandmarkConnections
-          .where((c) =>
-              rightEyeTypes.contains(c[0]) && rightEyeTypes.contains(c[1]))
+          .where(
+            (c) => rightEyeTypes.contains(c[0]) && rightEyeTypes.contains(c[1]),
+          )
           .toList();
       expect(rightEyeConnections.length, 4);
     });
@@ -927,27 +940,32 @@ void main() {
         boundingBox: BoundingBox.ltrb(50.0, 60.0, 150.0, 160.0),
         landmarks: [
           DogLandmark(
-              type: DogLandmarkType.noseBridgeBottom, x: 100.0, y: 110.0),
+            type: DogLandmarkType.noseBridgeBottom,
+            x: 100.0,
+            y: 110.0,
+          ),
           DogLandmark(type: DogLandmarkType.leftEyeOuter, x: 80.0, y: 90.0),
         ],
       );
     }
 
     AnimalPose makePose() {
-      return AnimalPose(landmarks: [
-        AnimalPoseLandmark(
-          type: AnimalPoseLandmarkType.neckBase,
-          x: 100.0,
-          y: 50.0,
-          confidence: 0.98,
-        ),
-        AnimalPoseLandmark(
-          type: AnimalPoseLandmarkType.tailEnd,
-          x: 300.0,
-          y: 200.0,
-          confidence: 0.85,
-        ),
-      ]);
+      return AnimalPose(
+        landmarks: [
+          AnimalPoseLandmark(
+            type: AnimalPoseLandmarkType.neckBase,
+            x: 100.0,
+            y: 50.0,
+            confidence: 0.98,
+          ),
+          AnimalPoseLandmark(
+            type: AnimalPoseLandmarkType.tailEnd,
+            x: 300.0,
+            y: 200.0,
+            confidence: 0.85,
+          ),
+        ],
+      );
     }
 
     Dog makeFullDog() {
@@ -1087,12 +1105,7 @@ void main() {
         },
         'pose': {
           'landmarks': [
-            {
-              'type': 'neckBase',
-              'x': 100.0,
-              'y': 50.0,
-              'confidence': 0.98,
-            },
+            {'type': 'neckBase', 'x': 100.0, 'y': 50.0, 'confidence': 0.98},
           ],
         },
         'imageWidth': 640,
@@ -1182,7 +1195,9 @@ void main() {
       expect(restored.face!.boundingBox.left, original.face!.boundingBox.left);
       expect(restored.face!.landmarks.length, original.face!.landmarks.length);
       expect(
-          restored.face!.landmarks[0].type, original.face!.landmarks[0].type);
+        restored.face!.landmarks[0].type,
+        original.face!.landmarks[0].type,
+      );
       expect(restored.face!.landmarks[0].x, original.face!.landmarks[0].x);
       expect(restored.face!.landmarks[0].y, original.face!.landmarks[0].y);
 
@@ -1190,11 +1205,15 @@ void main() {
       expect(restored.pose, isNotNull);
       expect(restored.pose!.landmarks.length, original.pose!.landmarks.length);
       expect(
-          restored.pose!.landmarks[0].type, original.pose!.landmarks[0].type);
+        restored.pose!.landmarks[0].type,
+        original.pose!.landmarks[0].type,
+      );
       expect(restored.pose!.landmarks[0].x, original.pose!.landmarks[0].x);
       expect(restored.pose!.landmarks[0].y, original.pose!.landmarks[0].y);
-      expect(restored.pose!.landmarks[0].confidence,
-          original.pose!.landmarks[0].confidence);
+      expect(
+        restored.pose!.landmarks[0].confidence,
+        original.pose!.landmarks[0].confidence,
+      );
     });
 
     test('toMap/fromMap round-trip with minimal dog', () {

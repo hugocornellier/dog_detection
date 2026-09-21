@@ -17,8 +17,9 @@ const _imagePath = 'integration_test/test_images/man_cat_dog.png';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('returns only the dog from a man + cat + dog frame',
-      (tester) async {
+  testWidgets('returns only the dog from a man + cat + dog frame', (
+    tester,
+  ) async {
     final data = await rootBundle.load(_imagePath);
     final mat = cv.imdecode(data.buffer.asUint8List(), cv.IMREAD_COLOR);
     addTearDown(mat.dispose);
@@ -34,17 +35,23 @@ void main() {
     );
 
     print(
-        'GATE image ${mat.cols}x${mat.rows}, dogs returned: ${results.length}');
+      'GATE image ${mat.cols}x${mat.rows}, dogs returned: ${results.length}',
+    );
     for (final r in results) {
-      print('GATE   species=${r.species} breed=${r.breed} '
-          'conf=${r.speciesConfidence?.toStringAsFixed(3)} '
-          'score=${r.score.toStringAsFixed(3)} '
-          'face=${r.face != null} landmarks=${r.face?.landmarks.length ?? 0}');
+      print(
+        'GATE   species=${r.species} breed=${r.breed} '
+        'conf=${r.speciesConfidence?.toStringAsFixed(3)} '
+        'score=${r.score.toStringAsFixed(3)} '
+        'face=${r.face != null} landmarks=${r.face?.landmarks.length ?? 0}',
+      );
     }
 
     expect(results, isNotEmpty, reason: 'the dog should be found');
-    expect(results.length, 1,
-        reason: 'the man and the cat must be dropped by the species gate');
+    expect(
+      results.length,
+      1,
+      reason: 'the man and the cat must be dropped by the species gate',
+    );
 
     final only = results.single;
     expect(only.species, 'dog');

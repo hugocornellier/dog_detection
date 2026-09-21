@@ -3,8 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dog_detection_example/main.dart';
 
 void main() {
-  testWidgets('home exposes live, still-image, and video demos',
-      (tester) async {
+  testWidgets('home exposes live, still-image, and video demos', (
+    tester,
+  ) async {
     await tester.pumpWidget(const DogDetectionApp());
 
     expect(find.text('Choose a Demo'), findsOneWidget);

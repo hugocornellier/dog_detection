@@ -287,12 +287,7 @@ void main() {
     });
 
     test('fromMap handles integer coordinates', () {
-      final map = {
-        'type': 'tailBase',
-        'x': 100,
-        'y': 200,
-        'confidence': 1,
-      };
+      final map = {'type': 'tailBase', 'x': 100, 'y': 200, 'confidence': 1};
       final lm = AnimalPoseLandmark.fromMap(map);
       expect(lm.x, 100.0);
       expect(lm.y, 200.0);
@@ -331,22 +326,26 @@ void main() {
   // AnimalPose, getLandmark, hasLandmarks, toMap/fromMap
   // ---------------------------------------------------------------------------
   group('AnimalPose', () {
-    AnimalPoseLandmark makeLm(AnimalPoseLandmarkType type,
-        {double x = 0, double y = 0, double confidence = 0.9}) {
+    AnimalPoseLandmark makeLm(
+      AnimalPoseLandmarkType type, {
+      double x = 0,
+      double y = 0,
+      double confidence = 0.9,
+    }) {
       return AnimalPoseLandmark(type: type, x: x, y: y, confidence: confidence);
     }
 
     test('constructor stores landmarks', () {
-      final pose = AnimalPose(landmarks: [
-        makeLm(AnimalPoseLandmarkType.neckBase, x: 10.0, y: 20.0),
-      ]);
+      final pose = AnimalPose(
+        landmarks: [makeLm(AnimalPoseLandmarkType.neckBase, x: 10.0, y: 20.0)],
+      );
       expect(pose.landmarks.length, 1);
     });
 
     test('hasLandmarks returns true when non-empty', () {
-      final pose = AnimalPose(landmarks: [
-        makeLm(AnimalPoseLandmarkType.tailEnd),
-      ]);
+      final pose = AnimalPose(
+        landmarks: [makeLm(AnimalPoseLandmarkType.tailEnd)],
+      );
       expect(pose.hasLandmarks, true);
     });
 
@@ -356,10 +355,12 @@ void main() {
     });
 
     test('getLandmark returns correct landmark by type', () {
-      final pose = AnimalPose(landmarks: [
-        makeLm(AnimalPoseLandmarkType.tailBase, x: 55.0, y: 66.0),
-        makeLm(AnimalPoseLandmarkType.neckBase, x: 11.0, y: 22.0),
-      ]);
+      final pose = AnimalPose(
+        landmarks: [
+          makeLm(AnimalPoseLandmarkType.tailBase, x: 55.0, y: 66.0),
+          makeLm(AnimalPoseLandmarkType.neckBase, x: 11.0, y: 22.0),
+        ],
+      );
       final lm = pose.getLandmark(AnimalPoseLandmarkType.tailBase);
       expect(lm, isNotNull);
       expect(lm!.x, 55.0);
@@ -367,9 +368,9 @@ void main() {
     });
 
     test('getLandmark returns null for missing type', () {
-      final pose = AnimalPose(landmarks: [
-        makeLm(AnimalPoseLandmarkType.neckBase),
-      ]);
+      final pose = AnimalPose(
+        landmarks: [makeLm(AnimalPoseLandmarkType.neckBase)],
+      );
       expect(pose.getLandmark(AnimalPoseLandmarkType.tailEnd), isNull);
     });
 
@@ -379,9 +380,9 @@ void main() {
     });
 
     test('toMap produces landmarks key', () {
-      final pose = AnimalPose(landmarks: [
-        makeLm(AnimalPoseLandmarkType.neckBase, x: 1.0, y: 2.0),
-      ]);
+      final pose = AnimalPose(
+        landmarks: [makeLm(AnimalPoseLandmarkType.neckBase, x: 1.0, y: 2.0)],
+      );
       final map = pose.toMap();
       expect(map.containsKey('landmarks'), true);
       final list = map['landmarks'] as List;
@@ -406,12 +407,22 @@ void main() {
     });
 
     test('toMap/fromMap round-trip', () {
-      final original = AnimalPose(landmarks: [
-        makeLm(AnimalPoseLandmarkType.frontLeftPaw,
-            x: 33.0, y: 44.0, confidence: 0.82),
-        makeLm(AnimalPoseLandmarkType.backRightPaw,
-            x: 77.0, y: 88.0, confidence: 0.65),
-      ]);
+      final original = AnimalPose(
+        landmarks: [
+          makeLm(
+            AnimalPoseLandmarkType.frontLeftPaw,
+            x: 33.0,
+            y: 44.0,
+            confidence: 0.82,
+          ),
+          makeLm(
+            AnimalPoseLandmarkType.backRightPaw,
+            x: 77.0,
+            y: 88.0,
+            confidence: 0.65,
+          ),
+        ],
+      );
       final restored = AnimalPose.fromMap(original.toMap());
       expect(restored.landmarks.length, 2);
       expect(restored.landmarks[0].type, AnimalPoseLandmarkType.frontLeftPaw);
@@ -450,30 +461,40 @@ void main() {
     });
 
     test('tail connection exists', () {
-      final hasTail = animalPoseConnections.any((c) =>
-          c[0] == AnimalPoseLandmarkType.tailBase &&
-          c[1] == AnimalPoseLandmarkType.tailEnd);
+      final hasTail = animalPoseConnections.any(
+        (c) =>
+            c[0] == AnimalPoseLandmarkType.tailBase &&
+            c[1] == AnimalPoseLandmarkType.tailEnd,
+      );
       expect(hasTail, true);
     });
 
     test('front left leg connections exist', () {
-      final thighKnee = animalPoseConnections.any((c) =>
-          c[0] == AnimalPoseLandmarkType.frontLeftThigh &&
-          c[1] == AnimalPoseLandmarkType.frontLeftKnee);
-      final kneePaw = animalPoseConnections.any((c) =>
-          c[0] == AnimalPoseLandmarkType.frontLeftKnee &&
-          c[1] == AnimalPoseLandmarkType.frontLeftPaw);
+      final thighKnee = animalPoseConnections.any(
+        (c) =>
+            c[0] == AnimalPoseLandmarkType.frontLeftThigh &&
+            c[1] == AnimalPoseLandmarkType.frontLeftKnee,
+      );
+      final kneePaw = animalPoseConnections.any(
+        (c) =>
+            c[0] == AnimalPoseLandmarkType.frontLeftKnee &&
+            c[1] == AnimalPoseLandmarkType.frontLeftPaw,
+      );
       expect(thighKnee, true);
       expect(kneePaw, true);
     });
 
     test('back right leg connections exist', () {
-      final thighKnee = animalPoseConnections.any((c) =>
-          c[0] == AnimalPoseLandmarkType.backRightThigh &&
-          c[1] == AnimalPoseLandmarkType.backRightKnee);
-      final kneePaw = animalPoseConnections.any((c) =>
-          c[0] == AnimalPoseLandmarkType.backRightKnee &&
-          c[1] == AnimalPoseLandmarkType.backRightPaw);
+      final thighKnee = animalPoseConnections.any(
+        (c) =>
+            c[0] == AnimalPoseLandmarkType.backRightThigh &&
+            c[1] == AnimalPoseLandmarkType.backRightKnee,
+      );
+      final kneePaw = animalPoseConnections.any(
+        (c) =>
+            c[0] == AnimalPoseLandmarkType.backRightKnee &&
+            c[1] == AnimalPoseLandmarkType.backRightPaw,
+      );
       expect(thighKnee, true);
       expect(kneePaw, true);
     });
@@ -484,8 +505,12 @@ void main() {
   // ---------------------------------------------------------------------------
   group('CropMetadata', () {
     test('constructor stores all fields', () {
-      const meta =
-          CropMetadata(cx1: 10.0, cy1: 20.0, cropW: 300.0, cropH: 250.0);
+      const meta = CropMetadata(
+        cx1: 10.0,
+        cy1: 20.0,
+        cropW: 300.0,
+        cropH: 250.0,
+      );
       expect(meta.cx1, 10.0);
       expect(meta.cy1, 20.0);
       expect(meta.cropW, 300.0);
@@ -501,15 +526,23 @@ void main() {
     });
 
     test('negative origin values are stored', () {
-      const meta =
-          CropMetadata(cx1: -5.0, cy1: -10.0, cropW: 100.0, cropH: 100.0);
+      const meta = CropMetadata(
+        cx1: -5.0,
+        cy1: -10.0,
+        cropW: 100.0,
+        cropH: 100.0,
+      );
       expect(meta.cx1, -5.0);
       expect(meta.cy1, -10.0);
     });
 
     test('large values are stored', () {
-      const meta =
-          CropMetadata(cx1: 0.0, cy1: 0.0, cropW: 7680.0, cropH: 4320.0);
+      const meta = CropMetadata(
+        cx1: 0.0,
+        cy1: 0.0,
+        cropW: 7680.0,
+        cropH: 4320.0,
+      );
       expect(meta.cropW, 7680.0);
       expect(meta.cropH, 4320.0);
     });
@@ -520,14 +553,16 @@ void main() {
   // ---------------------------------------------------------------------------
   group('Animal', () {
     AnimalPose makePose() {
-      return AnimalPose(landmarks: [
-        AnimalPoseLandmark(
-          type: AnimalPoseLandmarkType.neckBase,
-          x: 100.0,
-          y: 50.0,
-          confidence: 0.95,
-        ),
-      ]);
+      return AnimalPose(
+        landmarks: [
+          AnimalPoseLandmark(
+            type: AnimalPoseLandmarkType.neckBase,
+            x: 100.0,
+            y: 50.0,
+            confidence: 0.95,
+          ),
+        ],
+      );
     }
 
     Animal makeFullAnimal() {
@@ -718,7 +753,9 @@ void main() {
       expect(restored.pose, isNotNull);
       expect(restored.pose!.landmarks.length, original.pose!.landmarks.length);
       expect(
-          restored.pose!.landmarks[0].type, original.pose!.landmarks[0].type);
+        restored.pose!.landmarks[0].type,
+        original.pose!.landmarks[0].type,
+      );
     });
 
     test('toMap/fromMap round-trip with minimal animal', () {
