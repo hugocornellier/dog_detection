@@ -1002,8 +1002,8 @@ class DogOverlayPainter extends CustomPainter {
         ? null
         : '${(dog.speciesConfidence! * 100).toStringAsFixed(0)}%';
     final List<String> parts = [
-      if (dog.breed != null) dog.breed!,
-      if (confidence != null) confidence,
+      ?dog.breed,
+      ?confidence,
     ];
     final String breedInfo = parts.isEmpty ? '' : ' (${parts.join(', ')})';
     final String label = '${dog.species}$breedInfo';
