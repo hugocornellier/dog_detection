@@ -267,10 +267,10 @@ class DogDetector {
   /// (modelName, bytesReceived, totalBytes).
   ///
   /// [useCompiledModel] opts every active stage into LiteRT Next CompiledModel.
-  /// It defaults off. [accelerators] defaults to GPU with CPU fallback and
-  /// [precision] defaults to fp32. Every compiled graph is numerically checked;
-  /// an unsafe graph falls back stage-by-stage rather than returning corrupted
-  /// detections.
+  /// It defaults on; pass false to keep every stage on the Interpreter.
+  /// [accelerators] defaults to GPU with CPU fallback and [precision] defaults
+  /// to fp32. Every compiled graph is numerically checked; an unsafe graph
+  /// falls back stage-by-stage rather than returning corrupted detections.
   Future<void> initialize({
     void Function(String model, int received, int total)? onDownloadProgress,
     bool useCompiledModel = true,
