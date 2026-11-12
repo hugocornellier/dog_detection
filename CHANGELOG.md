@@ -1,3 +1,13 @@
+## 4.1.2
+
+* Remove the unused `android/` Gradle project. Android support is pure Dart
+  (`dartPluginClass`), so Flutter never built that folder, and it only made
+  pub.dev report "Legacy Kotlin configuration detected". Android apps build
+  and behave the same.
+* The example app builds on Flutter 3.50 (Gradle 9.5.0, AGP 9.3.1, KGP
+  2.4.20).
+* No API changes.
+
 ## 4.1.1
 
 * `detectFromCameraImage` now reads a desktop frame's byte order from
