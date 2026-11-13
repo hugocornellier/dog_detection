@@ -1,4 +1,4 @@
-## 4.1.2
+## 4.2.0
 
 * Remove the unused `android/` Gradle project. Android support is pure Dart
   (`dartPluginClass`), so Flutter never built that folder, and it only made
@@ -7,7 +7,7 @@
 * The example app builds on Flutter 3.50 (Gradle 9.5.0, AGP 9.3.1, KGP
   2.4.20).
 * Depend on `flutter_litert ^4.1.1` (was `^3.9.2`) and
-  `animal_detection ^4.1.3`. This package's API is unchanged, but
+  `animal_detection ^4.2.0`. This package's API is unchanged, but
   flutter_litert 4.x needs Android `minSdk` 24 and iOS 15.0, Flutter's
   defaults for new apps.
 * Android: flutter_litert 4.0.0 removed the Interpreter GPU delegate, so
